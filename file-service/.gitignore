@@ -1,0 +1,15 @@
+.env
+node_modules/
+log/
+public/user/
+public/project/
+public/notify/
+public/service/
+public/request/
+public/vehicleCard/
+public/library/
+public/device/
+public/ckEditor/
+public/bill/
+public/receipt/
+tmp/

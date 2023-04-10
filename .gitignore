@@ -1,0 +1,8 @@
+.env
+node_modules/
+log/
+public/user/
+public/project/
+public/notify/
+public/service/
+tmp/

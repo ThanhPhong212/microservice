@@ -1,0 +1,1365 @@
+openapi: '3.0.2'
+servers:
+  - url: 'http://localhost:8080'
+  - url: 'http://54.179.172.33:8080'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+  - name: authenticate
+    description: Get Token to access api
+  - name: user
+    description: Everything about User
+  - name: file
+    description: Everything about File
+  - name: project
+    description: Everything about project
+  - name: notify
+    description: Everything about notification
+  - name: onesignal
+    description: Everything about OneSignal
+  - name: service
+    description: Everything about service
+  - name: request
+    description: Everything about request
+  - name: building library
+    description: Everything about building library
+  - name: order
+    description: Everything about order
+paths:
+  /v1/mobile/auth/refresh-token:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - authenticate
+      summary: get the token with refresh token access App
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Successful operation
+
+  /v1/mobile/users/check-phone:
+    post:
+      tags:
+        - user
+      summary: check phone exist
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  example: '0938803794'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Update failure
+
+  /v1/mobile/users/login-otp:
+    post:
+      tags:
+        - user
+      summary: 'Login and get the token to access App with otp'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  example: '0938803794'
+                otp:
+                  type: string
+                  example: '123456'
+                device:
+                  type: string
+      responses:
+        '200':
+          description: Successful
+        '400':
+          description: Failure
+
+  /v1/mobile/users/resend-otp:
+    post:
+      tags:
+        - user
+      summary: 'resend otp each 90s'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  example: '0938803794'
+      responses:
+        '200':
+          description: Successful
+        '400':
+          description: failure
+
+  /v1/mobile/users:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - user
+      summary: Account information by token
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Update failure
+
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - user
+      summary: 'Update user information'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                fullName:
+                  type: string
+                birthday:
+                  type: string
+                gender:
+                  type: string
+                  enum: [0, 1, 2]
+                  description: '0: Nam, 1: Nữ, 2: Khác'
+                email:
+                  type: string
+                country:
+                  type: string
+                typeIdCard:
+                  type: string
+                  enum: [CARD, PASSPORT]
+                dateOfIssue:
+                  type: string
+                placeOfIssue:
+                  type: string
+                numberIdentify:
+                  type: string
+                imageFront:
+                  type: string
+                imageBackside:
+                  type: string
+      responses:
+        '200':
+          description: Update successful
+        '400':
+          description: Update failure
+
+  /v1/mobile/file/upload-image:
+    post:
+      tags:
+        - file
+      summary: 'Upload'
+      description: |
+        <p>Tải ảnh lên</p>
+        <ul>
+          <li>chọn tệp bạn muốn tải lên, ấn execute, sau đó copy tên file(cả đuôi file) vào nơi bạn muốn</li>
+        </ul>
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Successful operation
+
+  /v1/mobile/notifications:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - notify
+      summary: List of owner's notifications
+      description: |
+        <p>Danh sách thông báo của chủ sở hữu</p>
+        <ul>
+          <li>projectId: dựa vào api danh sách căn hộ của chủ sở hữu, chọn căn hộ trong căn hộ có project Id</li>
+          <li>time filter: YYYY-MM</li>
+        </ul>
+      parameters:
+        - name: projectId
+          in: query
+          description: Id Project
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: time
+          schema:
+            type: string
+            example: 2022-12
+          description: time filter (year-month)
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/notifications/{notifyId}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - notify
+      summary: 'Details of notifications'
+      description: |
+        <p>Thông tin thông báo</p>
+        <ul>
+          <li>notifyId: Sau khi có danh sách thông báo lấy được notifyId của thông báo muốn chọn</li>
+        </ul>
+      parameters:
+        - name: notifyId
+          in: path
+          description: Notification ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/project/apartment/{apartmentId}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'Detail apartment'
+      description: |
+        <p>Thông tin căn hộ của</p>
+        <ul>
+          <li>apartmentId: dựa vào api danh sách căn hộ</li>
+        </ul>
+      parameters:
+        - in: path
+          name: apartmentId
+          schema:
+            type: string
+          description: apartment id
+          required: true
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/project/apartment/list:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'List of apartments by owner'
+      description: List of apartments by owner
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/services:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'List service'
+      description: |
+        <p>Danh sách dịch vụ tiện ích mà căn hộ có thể tham gia</p>
+        <ul>
+          <li>projectId: dựa vào api danh sách căn hộ, chọn căn hộ của chủ sở hữu, trong căn hộ có id dự án</li>
+          <li>page: trang số </li>
+          <li>limit: giới hạn phần tử trong 1 trang </li>
+        </ul>
+      parameters:
+        - in: query
+          name: projectId
+          description: project ID
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: page
+          description: page
+          schema:
+            type: string
+        - in: query
+          name: limit
+          description: limit
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/services/{serviceId}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'Detail service'
+      description: |
+        <p>Thông tin chi tiết dich vụ</p>
+        <ul>
+          <li>serviceId: dựa vào api danh sách dịch vụ</li>
+        </ul>
+      parameters:
+        - name: serviceId
+          in: path
+          description: service ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/services/register:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'Register Service'
+      description: |
+        <p>Đăng ký dịch vụ</p>
+        <ul>
+          <li>apartmentId: Mã căn hộ lấy từ danh sách căn hộ của chủ sở hữu</li>
+          <li>serviceId: Mã tiện ích lấy từ danh sách dịch vụ tiện ích</li>
+          <li>adult: Số người lớn </li>
+          <li>child: Số trẻ em </li>
+          <li>slotId: _id chỗ </li>
+          <li>registrationDate: Ngày đăng ký </li>
+          <li>Time: Thời gian đăng ký, có thể đăng ký nhiều khung giờ thời, mỗi obj trong  mảng time là 1 khung giờ, các obj cách nhau bởi dấu phẩy
+            <ul> 
+              <li>from: Thời gian bắt đầu </li>
+              <li>to: Thời gian kết thúc </br></li>
+              <li>Slot: Chọn chỗ
+                <ul>
+                  <li>slotName: Tên chỗ </br></li>
+                  <li>slotCapacity: Số lượng đăng ký = Số lượng người lớn + Số lượng trẻ em </br></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>note: ghi chú </br></li></li>
+        </ul>
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                apartmentId:
+                  type: string
+                serviceId:
+                  type: string
+                adult:
+                  type: number
+                child:
+                  type: number
+                slotId:
+                  type: string
+                registrationDate:
+                  type: string
+                  example: YYYY-MM-DD
+                time:
+                  type: array
+                  items:
+                    properties:
+                      from:
+                        type: string
+                        example: 00:00
+                      to:
+                        type: string
+                        example: 00:00
+                note:
+                  type: string
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/services/register/{registerId}:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'Cancellation of service registration'
+      description: |
+        <p>Hủy đăng ký dịch vụ tiện ích</p>
+        <ul>
+          <li>registerId: dựa vào danh sách lịch sử các dịch vụ mà bạn đã đăng ký</li>
+          <li>status: CANCEL </li>
+          <li>reason: lý do hủy đăng ký </li>
+        </ul>
+      parameters:
+        - name: registerId
+          in: path
+          description: register ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [CANCEL]
+                  example: CANCEL
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'Service information has been registered'
+      description: |
+        <p>Thông tin chi tiết đăng ký dịch vụ tiện ích</p>
+        <ul>
+          <li>registerId: dựa vào danh sách lịch sử các dịch vụ mà bạn đã đăng ký</li>
+        </ul>
+      parameters:
+        - name: registerId
+          in: path
+          description: register ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/services/register/history:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'Service registration history'
+      description: |
+        <p>Lịch sử đăng ký dịch vụ tiện ích</p>
+        <ul>
+          <li>limit: mặc đinh là 5 </li>
+          <li>page: số trang, mặc định luôn ở trang 1</li>
+          <li>service: là service Id lấy từ danh sách dịch vụ, nếu bạn muốn xem lịch sử đăng ký của dịch vụ bạn chọn thì truyền vào serviceId, nếu bạn muốn xem lịch sử đăng ký của tất cả dịch vụ bạn đã đăng ký thì để trống</li>
+          <li>apartmentId: dựa vào danh sách căn hộ</li>
+          <li>status: trạng thái đăng ký
+            <ul>
+              <li>PROCESS: chờ duyệt</li>
+              <li>PAYMENT: Đã thanh toán</li>
+              <li>DONE: Đã duyệt</li>
+              <li>CANCEL: Hủy</li>
+            </ul>
+          </li>
+        </ul>
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+            example: 5
+        - name: page
+          in: query
+          schema:
+            type: number
+            example: 1
+        - name: service
+          in: query
+          description: Transmission to the ID of the convenience will take out all the history of registration of that utility, if not transmitted, it will take the history of all registered utilities
+          schema:
+            type: string
+        - name: apartmentId
+          in: query
+          description: apartment ID
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: PROCESS, PAYMENT, DONE, CANCEL
+          schema:
+            type: string
+            enum: [PROCESS, PAYMENT, DONE, CANCEL]
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/devices:
+    patch:
+      security:
+        - bearerAuth: []
+      tags:
+        - onesignal
+      summary: 'Upsert devices token'
+      description: |
+        <p>Tạo hoặc cập nhật device token trên Onesignal</p>
+        <ul>
+          <li>Khi Login: dựa vào token lấy data userId.</li>
+          <li>Khi logout: call api và truyền userId = null.</li>
+        </ul>
+        <p>Data Request:</p>
+        <ul>
+          <li>oneSignalId: Required</li>
+          <li>deviceToken: Required</li>
+          <li>deviceModel: Optional</li>
+          <li>platform: Optional</li>
+          <li>appVersion: Optional</li>
+          <li>userId: Optional</li>
+        </ul>
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oneSignalId:
+                  type: string
+                deviceToken:
+                  type: string
+                deviceModel:
+                  type: string
+                platform:
+                  type: string
+                appVersion:
+                  type: string
+                userId:
+                  type: string
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/requests/types:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - request
+      summary: 'List request'
+      description: 'Lấy danh loại sách phản ánh'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/requests:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - request
+      summary: 'Request Service'
+      description: |
+        <p>Tạo phản ánh</p>
+        <ul>
+          <li>type: là typeId lấy từ danh sách loại phản ánh</li>
+          <li>apartmentId: lấy từ danh sách loại căn hộ </li>
+          <li>otherContact: liên hệ</li>
+          <li>content: nội dung phản ánh </li>
+          <li>descriptionFile: tên file(bao gồm cả đuôi file) ảnh, hoạt video lấy từ api upload nếu không có ảnh hoạt video thì để null</li>
+        </ul>
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  required: true
+                apartmentId:
+                  type: string
+                  required: true
+                otherContact:
+                  type: string
+                content:
+                  type: string
+                descriptionFile:
+                  type: string
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/requests/{requestId}/evaluate:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - request
+      summary: 'Staff assessment'
+      description: |
+        <p>Đánh giá nhân viên xử lý yêu cầu</p>
+        <ul>
+          <li>requestId: id phản ánh muốn đánh giá láy từ danh sách phản ánh của CSH</li>
+          <li>rate: số sao</li>
+          <li>explain: Nội dung đánh giá</li>
+        </ul>
+      parameters:
+        - name: requestId
+          in: path
+          description: request ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rate:
+                  type: number
+                explain:
+                  type: string
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/requests/{requestId}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - request
+      summary: 'Details reflected'
+      description: |
+        <p>Xem chi tiết phản ánh</p>
+        <ul>
+          <li>requestId: id phản ánh muốn đánh giá láy từ danh sách phản ánh của CSH</li>
+        </ul>
+      parameters:
+        - name: requestId
+          in: path
+          description: request ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/requests/list:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - request
+      summary: 'List request'
+      description: |
+        <p>Danh sách đã phản ánh</p>
+        <ul>
+          <li>projectId: id dự án lấy trong api danh sách căn hộ, trong căn hộ bạn chọn, lấy id dự án </li>
+          <li>status: trạng thái phản ánh
+            <ul>
+              </li>NEW: mới</li>
+              </li>ACCEPT: chấp nhận xử lý </li>
+              </li>COMPLETE: hoàng thành</li>
+              </li>CANCEL: hủy</li>
+            </ul>
+          </li>
+          <li>page: </li>
+          <li>limit: </li>
+        </ul>
+      parameters:
+        - in: query
+          name: projectId
+          description: project ID
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: status
+          description: Trạng thái phản ánh
+          schema:
+            type: string
+            enum: ['NEW', 'ACCEPT', 'COMPLETE', 'CANCEL']
+        - in: query
+          name: page
+          description: page
+          schema:
+            type: number
+        - in: query
+          name: limit
+          description: limit
+          schema:
+            type: number
+      description: 'Lấy danh phản ánh theo project'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/parking/block:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - parking
+      summary: 'List of parking lots according to the block of the apartment'
+      description: |
+        <p>Danh sách bãi xe theo block của căn hộ</p>
+        <ul>
+          <li>apartmentId: id của căn hộ lấy từ danh sách căn hộ</li>
+        </ul>
+      parameters:
+        - in: query
+          name: apartmentId
+          description: apartment ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/parking/card:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - parking
+      summary: 'Car card registration'
+      description: |
+        <p>Đăng ký thẻ xe</p>
+        <ul>
+          <li>apartmentId: id căn hộ lấy từ danh sách căn hộ </li>
+          <li>licensePlate: biển số xe</li>
+          <li>vehicleBrand: thương hiệu (vd: honda) </li>
+          <li>vehicleType: loại phương tiện ( nhập đúng key)  
+            <ul>
+              <li>CAR</li>
+              <li>MOTOR</li>
+              <li>BICYCLE</li>
+            </ul>
+          </li>
+          <li>vehicleName: tên phương tiện (winner) </li>
+          <li>vehicleColor: màu phương tiện</li>
+          <li>parkingId:  mã bãi xe lấy từ danh sách bãi xe theo block</li>
+          <li>frontLicense: tên file giấy phép lái xe mặc trước lấy từ API upload copy tên file(bao gồm cả đuôi file), nếu k có để null </li>
+          <li>backsideLicense: tiên file giấy phép lái xe mặc sau lấy từ API upload copy tên file(bao gồm cả đuôi file), nếu k có để null</li>
+          <li>vehicleImage: hình ảnh phương tiện(nếu  là xe đạp), không có hình ảnh thì để null </li>
+        </ul>
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                apartmentId:
+                  type: string
+                  required: true
+                licensePlate:
+                  type: string
+                  required: true
+                vehicleBrand:
+                  type: string
+                  required: true
+                vehicleType:
+                  type: string
+                  required: true
+                vehicleName:
+                  type: string
+                vehicleColor:
+                  type: string
+                parkingId:
+                  type: string
+                  required: true
+                frontLicense:
+                  type: string
+                  example: null
+                backsideLicense:
+                  type: string
+                  example: null
+                vehicleImage:
+                  type: string
+                  example: null
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - parking
+      summary: 'List of car cards'
+      description: |
+        <p>Danh sách thẻ xe</p>
+        <ul>
+          <li>apartmentId: id của căn hộ lấy từ danh sách căn hộ</li>
+          <li>status: PROCESS: chờ duyệt, DONE: đã duyệt</li>
+        </ul>
+      parameters:
+        - in: query
+          name: status
+          description: status
+          required: true
+          schema:
+            type: string
+            enum: ['PROCESS', 'DONE']
+        - in: query
+          name: apartmentId
+          description: apartmentId
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/parking/card/{cardId}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - parking
+      summary: 'Car card details'
+      description: |
+        <p>chi tiết thẻ xe</p>
+        <ul>
+          <li>carId: id của thẻ xe, lấy từ danh sách thẻ xe</li>
+        </ul>
+      parameters:
+        - in: path
+          name: cardId
+          description: card ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - parking
+      summary: 'Cancel registration of vehicle card'
+      description: |
+        <p>Hủy đăng ký thẻ xe</p>
+        <ul>
+          <li>carId: id của thẻ xe, lấy từ danh sách thẻ xe</li>
+          <li>status: CANCEL</li>
+          <li>description: lý do hủy</li>
+        </ul>
+      parameters:
+        - in: path
+          name: cardId
+          description: card ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: CANCEL
+                  enum: ['CANCEL']
+                description:
+                  type: string
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+
+  /v1/mobile/project/{projectId}/library-building:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - building library
+      summary: 'List building library'
+      description: |
+        <p>Danh sách sổ tay tòa nhà</p>
+        <ul>
+          <li>projectId: là id của dự án mà căn hộ đang tham gia, có trong thông tin căn hộ</li>
+          <li>limit: là giới han giữ liệu lấy ra của từng trang, mặc định là 10 (không bắt buộc truyền vào)</li>
+          <li>page: là số trang mặc định là 1 (không bắt buộc truyền vào)</li>
+        </ul>
+      parameters:
+        - in: path
+          name: projectId
+          description:  projectId
+          schema:
+            type: string
+        - in: query
+          name: limit
+          description:  Default 10
+          schema:
+            type: number
+        - in: query
+          name: page
+          description:  Default 1
+          schema:
+            type: number
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/project/library-building/{libraryId}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - building library
+      summary: 'Building library details'
+      description: |
+        <p>Chi tiết sổ tay toà nhà</p>
+        <ul>
+          <li>libraryId: là id của một sổ tay tòa nhà</li>
+        </ul>
+      parameters:
+        - in: path
+          name: libraryId
+          description:  libraryId
+          schema:
+            type: string
+          required: true
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/order/bills/user:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - order
+      summary: 'Danh sách tổng hóa đơn chưa thanh toán theo căn hộ của chủ sở hữu'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+  
+  /v1/mobile/order/total-bills/apartment:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - order
+      summary: 'Danh sách tổng tiền các hóa đơn cần thanh toán của căn hộ'
+      description: |
+        <p>Danh sách hóa đơn của căn hộ</p>
+        <ul>
+          <li>apartmentId: là id của căn hộ</li>
+        </ul>
+      parameters:
+        - in: query
+          name: apartmentId
+          description:  apartmentId
+          schema:
+            type: string
+          required: true
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/order/bills/status:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - order
+      summary: 'Danh sách hóa đơn theo trạng thái'
+      description: |
+        <p>Danh sách hóa đơn theo trạng thái</p>
+        <ul>
+          <li>status: trạng thái của hóa đơn(SENT: đã gửi, PAID: đã thanh toán chờ kế toán xác nhận)</li>
+          <li>month: kỳ(tháng): 2-2023</li>
+          <li>feeTypeId: là id loại phí</li>
+          <li>page: trang</li>
+          <li>limit: giới hạn các phần tử của trang</li>
+        </ul>
+      parameters:
+        - in: query
+          name: status
+          description:  status
+          schema:
+            type: string
+            enum: ['PAID','SENT','DONE']
+        - in: query
+          name: feeTypeId
+          description:  feeTypeId
+          schema:
+            type: string
+        - in: query
+          name: month
+          description:  month
+          schema:
+            type: string
+            example: 2-2023
+        - in: query
+          name: page
+          description: page
+          schema:
+            type: string
+        - in: query
+          name: limit
+          description:  limit
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/order/fee-type:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - order
+      summary: 'Danh sách các loại phí của căn hộ'
+      description: |
+        <p>Danh sách các loại phí của căn hộ</p>
+        <ul>
+          <li>isExpand: 'ALL' </li>
+        </ul>
+      parameters:
+        - in: query
+          name: isExpand
+          description:  isExpand
+          schema:
+            type: string
+          example: ALL
+          required: true
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/mobile/order/bills/apartment:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - order
+      summary: 'Thông tin chi tiết tất cả hóa đơn chưa thanh toán của căn hộ'
+      description: |
+        <p>Danh sách các loại phí của căn hộ</p>
+        <ul>
+          <li>apartmentId: mã căn hộ </li>
+          <li>feeTypeId: mã loại phí </li>
+        </ul>
+      parameters:
+        - in: query
+          name: apartmentId
+          description:  apartmentId
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: feeTypeId
+          description:  feeTypeId
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+  
+  /v1/mobile/order/bills:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - order
+      summary: 'Thanh toán hóa đơn'
+      description: |
+        <p>Thanh toán hóa đơn</p>
+        <ul>
+          <li>listBillId: Danh sách id hóa đơn cần thanh toán </li>
+        </ul>
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listBillId:
+                  type: array
+                  items:
+                    example: 'id hóa đơn'
+                    required: true
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+  
+  /v1/mobile/order/payment/history:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - order
+      summary: 'Lịch sử thanh toán hóa đơn'
+      description: |
+        <p>Lịch sử thanh toán hóa đơn</p>
+        <ul>
+          <li>apartmentId: mã căn hộ </li>
+          <li>month: 2-2023 </li>
+        </ul>
+      parameters:
+        - in: query
+          name: apartmentId
+          description:  apartmentId
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: month
+          description: month
+          schema:
+            type: string
+          required: true
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+  

@@ -1,0 +1,40 @@
+{
+  "name": "apis-nl",
+  "version": "1.0.0",
+  "description": "To make it easy for you to get started with GitLab, here's a list of recommended next steps.",
+  "main": "app.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "lint": "npx eslint . --ext .js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://taihuynh1192:Kelmyn92@gitlab.com/nam-long/nl-admin-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/nam-long/nl-admin-backend/issues"
+  },
+  "homepage": "https://gitlab.com/nam-long/nl-admin-backend#readme",
+  "devDependencies": {
+    "eslint": "^8.29.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "express": "^4.16.3",
+    "hbs": "^4.0.1",
+    "mongoose": "^5.1.7",
+    "winston": "^3.0.0"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "babel-eslint": "^10.1.0",
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.5",
+    "dotenv": "^6.0.0",
+    "yup": "^0.32.11"
+  }
+}

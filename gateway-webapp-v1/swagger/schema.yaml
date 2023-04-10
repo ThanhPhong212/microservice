@@ -1,0 +1,1015 @@
+openapi: '3.0.2'
+servers:
+  - url: 'http://localhost:8080'
+  - url: 'http://54.179.172.33:8080'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+  - name: authenticate
+    description: Get Token to access api
+  - name: user
+    description: Everything about User
+  - name: file
+    description: Everything about File
+  - name: project
+    description: Everything about project
+  - name: notify
+    description: Everything about notification
+  - name: service
+    description: Everything about service
+paths:
+  /v1/users/login:
+    post:
+      tags:
+        - user
+      summary: 'Login and get the token to access App'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  example: '0938803794'
+                password:
+                  type: string
+                  example: 'Admin@123'
+      responses:
+        '200':
+          description: Successful operation
+
+  /v1/auth/refresh-token:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - authenticate
+      summary: 'get the token with refresh token access App'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Successful operation
+
+  /v1/users:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - user
+      summary: 'Lấy thông tin user theo token'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: Successful operation
+
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - user
+      summary: 'Cập nhật thông tin người dùng'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                fullName:
+                  type: string
+                birthday:
+                  type: string
+                gender:
+                  type: string
+                  enum: [0, 1, 2]
+                  description: '0: Nam, 1: Nữ, 2: Khác'
+                email:
+                  type: string
+                country:
+                  type: string
+                typeIdCard:
+                  type: string
+                  enum: [CARD, PASSPORT]
+                dateOfIssue:
+                  type: string
+                placeOfIssue:
+                  type: string
+                numberIdentify:
+                  type: string
+                imageFront:
+                  type: string
+                imageBackside:
+                  type: string
+      responses:
+        '200':
+          description: Update successful
+        '400':
+          description: Update failure
+
+  /v1/file/upload-image:
+    post:
+      tags:
+        - file
+      summary: 'Tải ảnh lên'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Successful operation
+
+  /v1/file/upload-service:
+    post:
+      tags:
+        - file
+      summary: 'Tải ảnh lên'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Successful operation
+
+  /v1/notify:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - notify
+      summary: 'Create Notification'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                level:
+                  type: string
+                  enum: [IMPORTANCE, NOT-IMPORTANCE]
+                toProject:
+                  type: string
+                  required: true
+                toBlock:
+                  type: string
+                toFloor:
+                  type: string
+                toApartment:
+                  type: string
+      responses:
+        '200':
+          description: Get list successful
+        '400':
+          description: Get list failure
+
+  /v1/notify/{notifyId}:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - notify
+      summary: 'update Notification'
+      parameters:
+        - name: notifyId
+          in: path
+          description: Notification ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                level:
+                  type: string
+                  enum: [IMPORTANCE, NOT-IMPORTANCE]
+                toBlock:
+                  type: string
+                toFloor:
+                  type: string
+                toApartment:
+                  type: string
+      responses:
+        '200':
+          description: Update successful
+        '400':
+          description: Update failure
+
+  /v1/notify/{notifyId}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - notify
+      summary: 'Detail Notification'
+      parameters:
+        - name: notifyId
+          in: path
+          description: Notification ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: Update successful
+        '400':
+          description: Update failure
+          
+  /v1/notify/list:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - notify
+      summary: 'List Notification'
+      parameters:
+        - in: query
+          name: idProject
+          schema:
+            type: string
+          required: true
+          description: object id of project
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: The numbers of items to return
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: The numbers of page to return
+      responses:
+        '200':
+          description: Create successful
+        '400':
+          description: Create failure
+
+  /v1/project:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'Create Project'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                area:
+                  type: number
+                description:
+                  type: string
+                hotline:
+                  type: string
+                service:
+                  type: number
+                basement:
+                  type: number
+                province:
+                  type: string
+                district:
+                  type: string
+                ward:
+                  type: string
+                address:
+                  type: string
+      responses:
+        '200':
+          description: Create successful
+        '400':
+          description: Create failure
+
+  /v1/project/list:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'Show list Project'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: Successful operation
+
+  /v1/project/{projectId}/apartment:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      parameters:
+        - name: projectId
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: The numbers of items to return
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: keywords
+          schema:
+            type: string
+        - in: query
+          name: block
+          schema:
+            type: string
+          description: is the ID of Block typeApartment
+        - in: query
+          name: typeApartment
+          schema:
+            type: string
+          description: is the ID of typeApartment
+      summary: 'Show list apartment in project'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: Successful operation
+
+  /v1/project/apartment/create:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'Create apartment'
+      description: 'block: is the ID of Block, typeApartment: is the ID of the type of apartment, owner: is the ID of the resident '
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                block:
+                  type: string
+                floorId:
+                  type: string
+                floorName:
+                  type: string
+                apartmentCode:
+                  type: string
+                typeApartment:
+                  type: string
+                areaApartment:
+                  type: number
+                owner:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Create successful
+        '400':
+          description: Create failure
+
+  /v1/project/{projectId}/block/list:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      parameters:
+        - name: projectId
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+      summary: 'danh sách block trong dự án'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: Successful operation
+
+  /v1/project/{projectId}/block:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'Create blocks'
+      description: 'Create block'
+      parameters:
+        - name: projectId
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                numberFloor:
+                  type: number
+                numberApartment:
+                  type: number
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/project/{projectId}/block/{blockId}:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'update blocks'
+      description: 'update block'
+      parameters:
+        - name: projectId
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+        - name: blockId
+          in: path
+          description: block Id
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                numberFloor:
+                  type: number
+                numberApartment:
+                  type: number
+                isDeleted:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /project/{projectId}/apartment/type:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'Create  type apartment'
+      description: 'Create type apartment'
+      parameters:
+        - name: projectId
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                quantity:
+                  type: number
+                bedroom:
+                  type: number
+                kitchen:
+                  type: number
+                toilet:
+                  type: number
+                balcony:
+                  type: number
+                isDeleted:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+          
+  /project/{projectId}/apartment/{typeApartmentId}/type:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'update type apartment'
+      description: 'update type apartment'
+      parameters:
+        - name: projectId
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+        - name: typeApartmentId
+          in: path
+          description: typeApartment ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                quantity:
+                  type: number
+                bedroom:
+                  type: number
+                kitchen:
+                  type: number
+                toilet:
+                  type: number
+                balcony:
+                  type: number
+                isDeleted:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/project/{id}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      parameters:
+        - name: id
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+      summary: 'project information'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: Successful operation
+
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'update project'
+      description: 'Create: typeApartmentId: null'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      parameters:
+        - name: id
+          in: path
+          description: Project ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                area:
+                  type: number
+                description:
+                  type: string
+                hotline:
+                  type: string
+                service:
+                  type: number
+                basement:
+                  type: number
+                province:
+                  type: string
+                district:
+                  type: string
+                ward:
+                  type: string
+                address:
+                  type: string
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/project/apartment/{apartmentId}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'get infomation apartment by id'
+      description: 'get infomation apartment by id'
+      parameters:
+        - name: apartmentId
+          in: path
+          description: apartment ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  # /v1/project/apartment/{id}:
+  #   post:
+  #     security:
+  #       - bearerAuth: []
+  #     tags:
+  #       - project
+  #     summary: 'update apartment'
+  #     description: 'edit detail apartment'
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         description: apartment ID
+  #         required: true
+  #         schema:
+  #           type: string
+  #     consumes:
+  #       - 'application/json'
+  #     produces:
+  #       - 'application/json'
+  #     parameters:
+  #       - name: id
+  #         in: path
+  #         description: Project ID
+  #         required: true
+  #         schema:
+  #           type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             type: object
+  #             properties:
+  #               owner:
+  #                 type: string
+  #               tenant:
+  #                 type: array
+  #                 example: ["objectid1", "objectid2"]
+  #               idProject:
+  #               member:
+  #                 type: array
+  #                 example: ["objectid1", "objectid2"]
+  #               status:
+  #                 type: boolean
+  #               block:
+  #                 type: string
+  #               floorName:
+  #                 type: number
+  #               apartmentCode:
+  #                 type: string
+  #               typeApartment:
+  #                 type: string
+  #               areaApartment:
+  #                 type: number
+  #               description:
+  #                 type: string
+  #     responses:
+  #       '200':
+  #         description: successful
+  #       '400':
+  #         description: failure
+
+  /v1/project/floor/{id}:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - project
+      summary: 'List apartment by floor'
+      description: 'List apartment by floor'
+      parameters:
+        - name: id
+          in: path
+          description: Floor ID
+          required: true
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/services/list:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'List service'
+      description: 'List apartment'
+      parameters:
+        - name: projectId
+          in: query
+          description: Id of project
+          required: true
+          schema:
+            type: string
+        - name: keywords
+          in: query
+          description: input text search
+          schema:
+            type: string
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/services:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'create service'
+      description: 'Create Service'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                thumbnail:
+                  type: string
+                description:
+                  type: string
+                projectId:
+                  type: string
+                  required: true
+                rule:
+                  type: string
+                typeAccept:
+                  type: string
+                  enum: [MANUAL, AUTO]
+                slot:
+                  type: object
+                  properties:
+                    slotName:
+                      type: string
+                    slotCapacity:
+                      type: number
+                typeWork:
+                  type: string
+                  enum: [EVERYDAY, DAYOFWEEK]
+                setupEveryDay:
+                  type: array
+                  example: [{}, {}]
+                setupDayOfWeek:
+                  type: object
+                  properties:
+                    Monday:
+                      type: array
+                    Tuesday:
+                      type: array
+                dayOff:
+                  type: array
+                  example: [2022-12-12]
+                status:
+                  type: boolean
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+  /v1/services/{serviceId}:
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'update service'
+      description: 'update Service'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      parameters:
+        - name: serviceId
+          in: path
+          description: service ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                thumbnail:
+                  type: string
+                description:
+                  type: string
+                rule:
+                  type: string
+                typeAccept:
+                  type: string
+                  enum: [MANUAL, AUTO]
+                slot:
+                  type: object
+                  properties:
+                    slotName:
+                      type: string
+                    slotCapacity:
+                      type: number
+                typeWork:
+                  type: string
+                  enum: [EVERYDAY, DAYOFWEEK]
+                setupEveryDay:
+                  type: array
+                  example: [{}, {}]
+                setupDayOfWeek:
+                  type: object
+                  properties:
+                    Monday:
+                      type: array
+                    Tuesday:
+                      type: array
+                dayOff:
+                  type: string
+                status:
+                  type: boolean
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure
+
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - service
+      summary: 'get service'
+      description: 'get Service by id'
+      consumes:
+        - 'application/json'
+      produces:
+        - 'application/json'
+      responses:
+        '200':
+          description: successful
+        '400':
+          description: failure

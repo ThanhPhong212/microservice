@@ -1,0 +1,14 @@
+{
+    "scripts": {
+        "develop": "pm2 start processes.json",
+        "product": "pm2 start processes.json --env production",
+        "reload": "pm2 stop all && pm2 start all --update-env",
+        "user-service": "cd user-service && pm2 start api.js",
+        "file-service": "cd file-service && pm2 start api.js",
+        "auth-service": "cd auth-service && pm2 start api.js",
+        "project-service": "cd project-service && pm2 start api.js",
+        "notify-service": "cd notify-service && pm2 start api.js",
+        "onesignal-service": "cd onesignal-service && pm2 start api.js",
+        "gateway-webapp-v1": "cd gateway-webapp-v1 && pm2 start server.js"
+    }
+}

@@ -1,0 +1,199 @@
+[
+    {
+        "script": "user-service",
+        "name": "user-service",
+        "ignore_watch": [
+            "node_modules"
+        ],
+        "env": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "user-service",
+            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb",
+            "JWT_EXPIRE": "2h",
+            "SECRET_REFRESH_KEY": "SEJNUkVGUkVTSFRPS0VO",
+            "JWT_REFRESH_EXPIRE": "10d",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        },
+        "env_production": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "user-service",
+            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb",
+            "JWT_EXPIRE": "2h",
+            "SECRET_REFRESH_KEY": "SEJNUkVGUkVTSFRPS0VO",
+            "JWT_REFRESH_EXPIRE": "10d",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        }
+    },
+    {
+        "script": "file-service",
+        "name": "file-service",
+        "ignore_watch": [
+            "node_modules"
+        ],
+        "env": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "file-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        },
+        "env_production": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "file-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        }
+    },
+    {
+        "script": "auth-service",
+        "name": "auth-service",
+        "ignore_watch": [
+            "node_modules"
+        ],
+        "env": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "auth-service",
+            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb",
+            "JWT_EXPIRE": "2h",
+            "SECRET_REFRESH_KEY": "SEJNUkVGUkVTSFRPS0VO",
+            "JWT_REFRESH_EXPIRE": "10d"
+        },
+        "env_production": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "auth-service",
+            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb",
+            "JWT_EXPIRE": "2h",
+            "SECRET_REFRESH_KEY": "SEJNUkVGUkVTSFRPS0VO",
+            "JWT_REFRESH_EXPIRE": "10d"
+        }
+    },
+    {
+        "script": "project-service",
+        "name": "project-service",
+        "ignore_watch": [
+            "node_modules"
+        ],
+        "env": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "project-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        },
+        "env_production": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "project-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        }
+    },
+    {
+        "script": "notify-service",
+        "name": "notify-service",
+        "ignore_watch": [
+            "node_modules"
+        ],
+        "env": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "notify-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/",
+            "one_signal_id": "1b8bbba8-a3c8-4498-aeea-89d7fa9d4eab",
+            "one_signal_key": "YzdhNTAxZjMtZjg1Zi00YThjLWI3Y2YtODYzZGFmZDg3MDY3"
+        },
+        "env_production": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "notify-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/",
+            "one_signal_id": "1b8bbba8-a3c8-4498-aeea-89d7fa9d4eab",
+            "one_signal_key": "YzdhNTAxZjMtZjg1Zi00YThjLWI3Y2YtODYzZGFmZDg3MDY3"
+        }
+    },
+    {
+        "script": "service-service",
+        "name": "service-service",
+        "ignore_watch": [
+            "node_modules"
+        ],
+        "env": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "service-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        },
+        "env_production": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "service-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        }
+    },
+    {
+        "script": "request-service",
+        "name": "request-service",
+        "ignore_watch": [
+            "node_modules"
+        ],
+        "env": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "request-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        },
+        "env_production": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "request-service",
+            "AVATAR_URL": "http://54.179.172.33:2001/"
+        }
+    },
+    {
+        "script": "onesignal-service",
+        "name": "onesignal-service",
+        "ignore_watch": [
+            "node_modules"
+        ],
+        "env": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "onesignal-service",
+            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb"
+        },
+        "env_production": {
+            "mongoose_url": "mongodb://localhost:27017",
+            "database_name": "onesignal-service",
+            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb"
+        }
+    },
+    {
+        "script": "parking-service",
+        "name": "parking-service",
+        "ignore_watch": ["node_modules"],
+        "env": {
+          "mongoose_url": "mongodb://localhost:27017",
+          "database_name": "parking-service",
+          "AVATAR_URL": "http://54.179.172.33:2001/"
+        },
+        "env_production": {
+          "mongoose_url": "mongodb://localhost:27017",
+          "database_name": "parking-service",
+          "AVATAR_URL": "http://54.179.172.33:2001/"
+        }
+    },
+    {
+        "script": "order-service",
+        "name": "order-service",
+        "ignore_watch": ["node_modules"],
+        "env": {
+          "mongoose_url": "mongodb://localhost:27017",
+          "database_name": "order-service",
+          "AVATAR_URL": "http://54.179.172.33:2001/"
+        },
+        "env_production": {
+          "mongoose_url": "mongodb://localhost:27017",
+          "database_name": "order-service",
+          "AVATAR_URL": "http://54.179.172.33:2001/"
+        }
+    },
+    {
+        "script": "gateway-webapp-v1",
+        "name": "gateway-webapp-v1",
+        "ignore_watch": [
+            "node_modules"
+        ],
+        "env": {
+            "URL_AUTH": "http://localhost:8080/"
+        },
+        "env_production": {
+            "URL_AUTH": "http://54.179.172.33:8080/"
+        }
+    }
+]
