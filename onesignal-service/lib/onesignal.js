@@ -1,13 +1,14 @@
+/* eslint-disable camelcase */
 const OneSignal = require('onesignal-node');
 
-const config = require('../../notify-service/config/index');
-const logger = require('../../notify-service/utils/logger/index');
+const config = require('../config/index');
+const logger = require('../utils/logger/index');
 
 const client = new OneSignal.Client(config.onesignal.id, config.onesignal.key);
 
 class CustomNotification {
   constructor({
-    includedSegments, contents, includePlayerIds, filters,
+    includedSegments, contents, includePlayerIds, filters, web_url,
   }) {
     this.id = '';
     this.client = client;
@@ -23,13 +24,15 @@ class CustomNotification {
     if (filters) {
       this.notification.filters = filters;
     }
+    if (web_url) {
+      this.notification.web_url = web_url;
+    }
   }
 
   async create() {
     let data = null;
     try {
       data = await this.client.createNotification(this.notification);
-      logger.info(`notify: ${JSON.stringify(data)}`);
     } catch (e) {
       if (e instanceof OneSignal.HTTPError) {
         logger.info(JSON.stringify(e));

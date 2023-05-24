@@ -74,8 +74,7 @@ exports.createRequestMobile = async (req, res) => {
     // eslint-disable-next-line no-promise-executor-return
     const result = await new Promise((resolve) => eventEmitter.once('csmInfoApartment', resolve));
     requestIns.blockId = result.block._id;
-    requestIns.floorId = result.floor._id;
-    requestIns.projectId = result.block.idProject;
+    requestIns.projectId = result.block.projectId;
     const data = await Request.create(requestIns);
     await channel.sendToQueue(
       'FILE-IMAGE',
@@ -187,7 +186,7 @@ exports.updateRequest = async (req, res) => {
 exports.getRequestById = async (req, res) => {
   try {
     const { requestId } = req.params;
-    const request = await Request.findById(requestId).select('-__v');
+    const request = await Request.findById(requestId).select('-__v').populate('type', '-__v');
     const arrayUser = [request.createdBy];
     if (request.staff) {
       arrayUser.push(request.staff);
@@ -203,7 +202,7 @@ exports.getRequestById = async (req, res) => {
     // eslint-disable-next-line no-promise-executor-return
     const dataConsume = await new Promise((resolve) => eventEmitter.once('csmUserRequest', resolve));
 
-    // get info apartment, block, floor
+    // get info apartment, block
     if (request.apartmentId) {
       await channel.sendToQueue('REQUEST-APARTMENT-GET', Buffer.from(JSON.stringify(request.apartmentId)));
       await channel.consume('REQUEST-APARTMENT-INFO', (info) => {
@@ -223,13 +222,8 @@ exports.getRequestById = async (req, res) => {
           _id: apartmentData.block._id,
           name: apartmentData.block.name,
         };
-        request._doc.floor = {
-          _id: apartmentData.floor._id,
-          name: apartmentData.floor.name,
-        };
         delete request._doc.blockId;
         delete request._doc.apartmentId;
-        delete request._doc.floorId;
       }
     }
     request._doc.createdBy = dataConsume[request.createdBy];
@@ -290,7 +284,7 @@ exports.getListRequest = async (req, res) => {
       // set up field search in user
       const dataSearch = {
         keywords,
-        field: [{ value: 'phone', type: 'string' }, { value: 'fullName', type: 'string' }],
+        field: [{ value: 'phone', type: 'string' }, { value: 'name', type: 'string' }],
       };
       // get list userId match keywords
       await channel.sendToQueue('USER-SEARCH-REQUEST', Buffer.from(JSON.stringify(dataSearch)));
@@ -464,13 +458,13 @@ exports.assignStaffType = async (req, res) => {
     });
 
     // Update processing staff for each type of request according to the project
-    const listUpdateFullNameAndIdProject = assign.map((item) => ({
+    const listUpdatenameAndProjectId = assign.map((item) => ({
       updateOne: {
         filter: { _id: item._id },
         update: { $set: { assign: item.assign } },
       },
     }));
-    await Type.bulkWrite(listUpdateFullNameAndIdProject);
+    await Type.bulkWrite(listUpdatenameAndProjectId);
 
     return res.status(200).send({
       success: true,

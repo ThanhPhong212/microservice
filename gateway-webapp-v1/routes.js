@@ -339,6 +339,54 @@ const ROUTES = [
       // },
     },
   },
+  {
+    url: '/v1/cashback/order',
+    auth: false,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:8443',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
+    url: '/v1/cashback',
+    auth: true,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:8443',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
+    url: '/v1/mobile/cashback',
+    auth: true,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:8443',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
   // { example 2
   //   url: '/premium',
   //   auth: true,

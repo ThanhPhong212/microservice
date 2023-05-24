@@ -203,7 +203,7 @@ exports.listParking = async (req, res) => {
     parking.map((item) => {
       if (userData) {
         item._doc.updatedBy = {
-          name: userData[item.updatedBy].fullName,
+          name: userData[item.updatedBy].name,
           phone: userData[item.updatedBy].phone,
         };
       }
@@ -303,7 +303,6 @@ exports.detailParking = async (req, res) => {
     // get info block
     const blockInfo = {
       blockId: parking.blockId,
-      floorId: parking.floorId,
     };
     await channel.sendToQueue('PARKING-DETAILS-BLOCK-GET', Buffer.from(JSON.stringify(blockInfo)));
     await channel.consume('PARKING-DETAILS-BLOCK-INFO', (block) => {
@@ -319,7 +318,7 @@ exports.detailParking = async (req, res) => {
 
     // format data
     parking._doc.updatedBy = {
-      name: userData.fullName,
+      name: userData.name,
       phone: userData.phone,
     };
     parking._doc.block = blockData.name;
@@ -336,7 +335,6 @@ exports.detailParking = async (req, res) => {
       capacity: parking.quantityConfig.bicycle,
     };
     delete parking._doc.blockId;
-    delete parking._doc.floorId;
     delete parking._doc.quantityConfig;
 
     return res.status(200).send({

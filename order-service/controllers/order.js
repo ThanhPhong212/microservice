@@ -193,7 +193,6 @@ exports.getAllOrder = async (req, res) => {
       item._doc.apartment = {
         name: dataApartment[item.apartmentId].apartmentCode,
         block: dataApartment[item.apartmentId].block.name,
-        floor: dataApartment[item.apartmentId].floor.name,
       };
       item._doc.feeType = {
         _id: item.feeTypeId,
@@ -266,11 +265,10 @@ exports.getOderByFeeId = async (req, res) => {
       // format data
       data._doc.apartment = {
         name: apartmentData.apartmentCode,
-        floor: apartmentData.floor.name,
         block: apartmentData.block.name,
       };
       data._doc.createdBy = {
-        name: userData.fullName,
+        name: userData.name,
         phone: userData.phone,
       };
       delete data._doc.apartmentId;
@@ -314,11 +312,10 @@ exports.getOderById = async (req, res) => {
     // format data
     data._doc.apartment = {
       name: apartmentData.apartmentCode,
-      floor: apartmentData.floor.name,
       block: apartmentData.block.name,
     };
     data._doc.createdBy = {
-      name: userData.fullName,
+      name: userData.name,
       phone: userData.phone,
     };
     delete data._doc.apartmentId;
@@ -556,7 +553,7 @@ exports.exportBill = async (req, res) => {
       delete item._doc.sentDate;
       item._doc['Mã phương tiện'] = item.vehicleId;
       delete item._doc.vehicleId;
-      item._doc['Tạo bởi'] = userData[item.createdBy].fullName;
+      item._doc['Tạo bởi'] = userData[item.createdBy].name;
       delete item._doc.createdBy;
       item._doc['Kỳ thanh toán'] = item.month;
       delete item._doc.month;
@@ -827,7 +824,7 @@ exports.listBillByStatus = async (req, res) => {
         name: listApartmentById[item.apartmentId].apartmentCode,
       };
       item._doc.createdBy = {
-        name: userData[item.createdBy].fullName,
+        name: userData[item.createdBy].name,
         phone: userData[item.createdBy].phone,
       };
       item._doc.feeType = {
@@ -950,11 +947,10 @@ exports.payTheBill = async (req, res) => {
         item._doc.apartment = {
           _id: apartmentData._id,
           name: apartmentData.apartmentCode,
-          floor: apartmentData.floor.name,
         };
         item._doc.payer = {
           _id: userData._id,
-          name: userData.fullName,
+          name: userData.name,
           phone: userData.phone,
         };
         item._doc.dateOfPayment = new Date().valueOf();
@@ -969,13 +965,12 @@ exports.payTheBill = async (req, res) => {
       data.dateOfPayment = new Date().valueOf();
       data.payer = {
         _id: userData._id,
-        name: userData.fullName,
+        name: userData.name,
         phone: userData.phone,
       };
       data.apartment = {
         _id: apartmentData._id,
         name: apartmentData.apartmentCode,
-        floor: apartmentData.floor.name,
       };
       data.total = total;
       data.bill = listOrder;
@@ -1018,215 +1013,6 @@ exports.paymentHistory = async (req, res) => {
     return res.status(200).send({
       success: true,
       data: transactionHistory,
-    });
-  } catch (error) {
-    return res.status(400).send({
-      success: false,
-      error: error.message,
-    });
-  }
-};
-
-exports.revenueStatistics = async (req, res) => {
-  try {
-    const { projectId, blockId, feeTypeId } = req.query;
-    const idProject = mongoose.Types.ObjectId(projectId);
-    const query = { projectId: idProject, status: 'DONE' };
-    if (blockId) { query.blockId = mongoose.Types.ObjectId(blockId); }
-    if (feeTypeId) { query.feeTypeId = mongoose.Types.ObjectId(feeTypeId); }
-    const data = await Order.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: {
-            $dateToString: {
-              format: '%m/%Y',
-              date: {
-                $toDate: {
-                  $toDouble: '$createdAt',
-                },
-              },
-            },
-          },
-          total: { $sum: '$invoiceTotal' },
-        },
-      },
-    ]);
-
-    // sắp xếp dữ liệu theo tháng
-    const monthYear = Array.from(data, ({ _id }) => _id);
-    const sorted = monthYear.sort((a, b) => {
-      a = a.split('/');
-      b = b.split('/');
-      return new Date(a[1], a[0], 1) - new Date(b[1], b[0], 1);
-    });
-
-    // dữ liệu hóa đơn theo tháng
-    const dataOrder = data.reduce((acc, cur) => {
-      const id = cur._id;
-      return { ...acc, [id]: cur };
-    }, {});
-
-    // lấy dữ liệu 12 tháng gần nhất
-    const get12Month = sorted.filter((item, index) => index > (sorted.length - 13));
-    const monthlyStatisticsList = [];
-    get12Month.map((item) => {
-      const dataMonth = {
-        _id: item,
-        total: dataOrder[item].total,
-      };
-      monthlyStatisticsList.push(dataMonth);
-      return item;
-    });
-
-    return res.status(200).send({
-      success: true,
-      data: monthlyStatisticsList,
-    });
-  } catch (error) {
-    return res.status(400).send({
-      success: false,
-      error: error.message,
-    });
-  }
-};
-
-exports.debtStatistics = async (req, res) => {
-  try {
-    const { projectId, blockId, feeTypeId } = req.query;
-    const idProject = mongoose.Types.ObjectId(projectId);
-    const query = { projectId: idProject, status: { $in: ['SENT', 'OVERDUE'] } };
-    if (blockId) { query.blockId = blockId; }
-    if (feeTypeId) { query.blockId = feeTypeId; }
-    const chartDebt = await Order.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: {
-            $dateToString: {
-              format: '%m/%Y',
-              date: {
-                $toDate: {
-                  $multiply: [
-                    { $toDouble: '$createdAt' },
-                    1,
-                  ],
-                },
-              },
-            },
-          },
-          total: { $sum: '$invoiceTotal' },
-        },
-      },
-    ]);
-
-    // sắp xếp dữ liệu theo tháng
-    const monthYear = Array.from(chartDebt, ({ _id }) => _id);
-    const sorted = monthYear.sort((a, b) => {
-      a = a.split('/');
-      b = b.split('/');
-      return new Date(a[1], a[0], 1) - new Date(b[1], b[0], 1);
-    });
-
-    // dữ liệu hóa đơn theo tháng
-    const dataOrder = chartDebt.reduce((acc, cur) => {
-      const id = cur._id;
-      return { ...acc, [id]: cur };
-    }, {});
-    const monthlyStatisticsList = [];
-
-    // lấy dữ liệu 12 tháng gần nhất
-    const get12Month = sorted.filter((item, index) => index > (sorted.length - 13));
-    get12Month.map((item) => {
-      const dataMonth = {
-        _id: item,
-        total: dataOrder[item].total,
-      };
-      monthlyStatisticsList.push(dataMonth);
-      return item;
-    });
-
-    return res.status(200).send({
-      success: true,
-      data: monthlyStatisticsList,
-    });
-  } catch (error) {
-    return res.status(400).send({
-      success: false,
-      error: error.message,
-    });
-  }
-};
-
-exports.listDebt = async (req, res) => {
-  try {
-    const { projectId } = req.query;
-    const idProject = mongoose.Types.ObjectId(projectId);
-    const listDebt = await Order.aggregate([
-      { $match: { projectId: idProject, status: { $in: ['SENT', 'OVERDUE'] } } },
-      {
-        $group: {
-          _id: '$apartmentId', bill: { $push: '$$ROOT' }, total: { $sum: '$invoiceTotal' },
-        },
-      },
-    ]);
-    if (listDebt.length > 0) {
-      const listApartmentId = Array.from(listDebt, ({ _id }) => _id);
-      await channel.sendToQueue('STATISTICS-APARTMENT-GET', Buffer.from(JSON.stringify(listApartmentId)));
-      await channel.consume('STATISTICS-APARTMENT-INFO', (info) => {
-        const dataApartment = JSON.parse(info.content);
-        channel.ack(info);
-        eventEmitter.emit('apartmentDone', dataApartment);
-      });
-      setTimeout(() => eventEmitter.emit('apartmentDone'), 10000);
-      const apartmentData = await new Promise((resolve) => { eventEmitter.once('apartmentDone', resolve); });
-      const apartmentDatalist = apartmentData.reduce((acc, cur) => {
-        const id = cur._id;
-        return { ...acc, [id]: cur };
-      }, {});
-
-      let userData;
-      if (apartmentData.length > 0) {
-        const listUserId = Array.from(apartmentData, ({ owner }) => owner);
-        await channel.sendToQueue('STATISTICS-USER-GET', Buffer.from(JSON.stringify(listUserId)));
-        await channel.consume('STATISTICS-USER-INFO', (info) => {
-          const dataUser = JSON.parse(info.content);
-          channel.ack(info);
-          eventEmitter.emit('userDone', dataUser);
-        });
-        setTimeout(() => eventEmitter.emit('userDone'), 10000);
-        userData = await new Promise((resolve) => { eventEmitter.once('userDone', resolve); });
-      }
-      // Get information type
-      const listFeeType = await FeeType.find().select('-__v -isExpand');
-      const feeType = listFeeType.reduce((acc, cur) => {
-        const id = cur._id;
-        return { ...acc, [id]: cur };
-      }, {});
-
-      if (userData) {
-        listDebt.map((item) => {
-          item.apartment = {
-            name: apartmentDatalist[item._id].apartmentCode,
-            block: apartmentDatalist[item._id].block.name,
-            floor: apartmentDatalist[item._id].floor.name,
-          };
-          item.bill.map((element) => {
-            element.feeType = feeType[element.feeTypeId];
-            delete element.feeTypeId;
-            return element;
-          });
-          item.owner = {
-            name: userData[apartmentDatalist[item._id].owner].fullName,
-            phone: userData[apartmentDatalist[item._id].owner].phone,
-          };
-          return item;
-        });
-      }
-    }
-    return res.status(200).send({
-      success: true,
-      data: listDebt,
     });
   } catch (error) {
     return res.status(400).send({

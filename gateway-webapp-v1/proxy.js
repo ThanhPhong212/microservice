@@ -20,6 +20,7 @@ const setupProxies = (app, routes) => {
           });
           if (response && response.data?.success) {
             req.headers.userId = response.data.data.userId;
+            req.headers.role = response.data.data.role;
             return next();
           }
           return res.status(401).send({

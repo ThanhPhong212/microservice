@@ -20,9 +20,6 @@ const requestSchema = new Schema({
   blockId: {
     type: Schema.Types.ObjectId,
   },
-  floorId: {
-    type: Schema.Types.ObjectId,
-  },
   apartmentId: {
     type: Schema.Types.ObjectId,
   },
@@ -83,8 +80,8 @@ const requestSchema = new Schema({
 });
 
 requestSchema.virtual('descriptionFilePath').get(function () {
-  if (!this.descriptionFile) { return `${process.env.AVATAR_URL}/servicedefault.png`; }
-  return `${process.env.AVATAR_URL}request/${this.code}/${this.descriptionFile}`;
+  if (!this.descriptionFile) { return `${process.env.IMAGE_URL}/image_default.jpg`; }
+  return `${process.env.IMAGE_URL}request/${this.code}/${this.descriptionFile}`;
 });
 
 requestSchema.pre('save', function (next) {

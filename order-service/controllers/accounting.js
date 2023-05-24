@@ -12,6 +12,7 @@ const connect = require('../lib/rabbitMQ');
 const Order = require('../models/order');
 const mongoose = require('mongoose');
 const FeeType = require('../models/feeType');
+const Revenue = require('../models/revenue');
 
 let channel;
 
@@ -179,12 +180,11 @@ exports.listAccounting = async (req, res) => {
           item._doc.apartment = {
             name: dataApartment[item.apartmentId].apartmentCode,
             block: dataApartment[item.apartmentId].block.name,
-            floor: dataApartment[item.apartmentId].floor.name,
           };
           item._doc.bill = billDone[item.apartmentId].bill;
         }
         item._doc.createdBy = {
-          name: dataUser[item.createdBy].fullName,
+          name: dataUser[item.createdBy].name,
           phone: dataUser[item.createdBy].phone,
         };
         return item;
@@ -208,13 +208,34 @@ exports.listAccounting = async (req, res) => {
       const id = cur._id.receiptType;
       return { ...acc, [id]: cur };
     }, {});
+
+    let theMonthEarlier;
+    if (month) {
+      const ArrayMonthYear = month.split('-');
+      let monthInArray = ArrayMonthYear[0] - 1;
+      let yearInArray = ArrayMonthYear[1];
+      if (monthInArray === 0) { monthInArray = 12; yearInArray -= 1; }
+      theMonthEarlier = `${monthInArray}-${yearInArray}`;
+    }
+
+    const revenue = await Revenue.findOne({ month: theMonthEarlier, projectId });
+    const openingBalance = revenue ? revenue.value : 0;
     const totalRevenue = calculationOfRevenueAndExpenditure.true ? calculationOfRevenueAndExpenditure.true.sum : 0;
     const totalExpenditure = calculationOfRevenueAndExpenditure.false ? calculationOfRevenueAndExpenditure.false.sum : 0;
 
+    const endingBalance = openingBalance + totalRevenue - totalExpenditure;
+    const dataEndingBalance = { value: endingBalance, month };
+    await Revenue.findOneAndUpdate({ month, projectId }, dataEndingBalance, {
+      new: true,
+      upsert: true,
+    });
+
     const data = {
       accounting,
+      openingBalance,
       totalRevenue,
       totalExpenditure,
+      endingBalance,
     };
 
     return res.status(200).send({
@@ -338,9 +359,9 @@ exports.exportReceipt = async (req, res) => {
           }
           item._doc['Ngày gửi hóa đơn'] = item.sentDate;
           delete item._doc.sentDate;
-          item._doc['Tạo bởi'] = userData[item.createdBy] ? userData[item.createdBy].fullName : 'Không có dữ liệu';
+          item._doc['Tạo bởi'] = userData[item.createdBy] ? userData[item.createdBy].name : 'Không có dữ liệu';
           delete item._doc.createdBy;
-          item._doc['Người thanh toán'] = userData[item.payer] ? userData[item.payer].fullName : 'Thanh toán tại quầy';
+          item._doc['Người thanh toán'] = userData[item.payer] ? userData[item.payer].name : 'Thanh toán tại quầy';
           delete item._doc.createdBy;
           const createdAt = new Date(item.createdAt * 1);
           item._doc['Ngày tạo'] = `${createdAt.toLocaleDateString('vi-VN')} ${createdAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
@@ -376,7 +397,7 @@ exports.exportReceipt = async (req, res) => {
         delete item._doc.description;
         item._doc['Tổng tiền'] = item.invoiceTotal;
         delete item._doc.invoiceTotal;
-        item._doc['Tạo bởi'] = userData[item.createdBy] ? userData[item.createdBy].fullName : 'Không có dữ liệu';
+        item._doc['Tạo bởi'] = userData[item.createdBy] ? userData[item.createdBy].name : 'Không có dữ liệu';
         const createdAt = new Date(item.createdAt * 1);
         delete item._doc.createdAt;
         delete item._doc.createdBy;

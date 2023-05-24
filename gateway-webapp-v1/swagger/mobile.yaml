@@ -1,6 +1,6 @@
 openapi: '3.0.2'
 servers:
-  - url: 'http://localhost:8080'
+  - url: 'http://192.168.2.8:8080'
   - url: 'http://54.179.172.33:8080'
 components:
   securitySchemes:
@@ -54,36 +54,36 @@ paths:
         '200':
           description: Successful operation
 
-  /v1/mobile/users/check-phone:
-    post:
-      tags:
-        - user
-      summary: check phone exist
-      consumes:
-        - 'application/json'
-      produces:
-        - 'application/json'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                phone:
-                  type: string
-                  example: '0938803794'
-      responses:
-        '200':
-          description: Successful operation
-        '400':
-          description: Update failure
+  # /v1/mobile/users/check-phone:
+  #   post:
+  #     tags:
+  #       - user
+  #     summary: check phone exist
+  #     consumes:
+  #       - 'application/json'
+  #     produces:
+  #       - 'application/json'
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             type: object
+  #             properties:
+  #               phone:
+  #                 type: string
+  #                 example: '0938803794'
+  #     responses:
+  #       '200':
+  #         description: Successful operation
+  #       '400':
+  #         description: Update failure
 
-  /v1/mobile/users/login-otp:
+  /v1/mobile/users/login:
     post:
       tags:
         - user
-      summary: 'Login and get the token to access App with otp'
+      summary: 'Login with phone or username'
       consumes:
         - 'application/json'
       produces:
@@ -95,46 +95,44 @@ paths:
             schema:
               type: object
               properties:
-                phone:
+                username:
                   type: string
-                  example: '0938803794'
-                otp:
+                  example: 'bienphong'
+                password:
                   type: string
-                  example: '123456'
-                device:
-                  type: string
+                  example: '12345678'
       responses:
         '200':
           description: Successful
         '400':
           description: Failure
 
-  /v1/mobile/users/resend-otp:
-    post:
-      tags:
-        - user
-      summary: 'resend otp each 90s'
-      consumes:
-        - 'application/json'
-      produces:
-        - 'application/json'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                phone:
-                  type: string
-                  example: '0938803794'
-      responses:
-        '200':
-          description: Successful
-        '400':
-          description: failure
+  # /v1/mobile/users/resend-otp:
+  #   post:
+  #     tags:
+  #       - user
+  #     summary: 'resend otp each 90s'
+  #     consumes:
+  #       - 'application/json'
+  #     produces:
+  #       - 'application/json'
+  #     requestBody:
+  #       required: true
+  #       content:
+  #         application/json:
+  #           schema:
+  #             type: object
+  #             properties:
+  #               phone:
+  #                 type: string
+  #                 example: '0938803794'
+  #     responses:
+  #       '200':
+  #         description: Successful
+  #       '400':
+  #         description: failure
 
-  /v1/mobile/users:
+  /v1/mobile/users/profile:
     get:
       security:
         - bearerAuth: []
@@ -169,31 +167,29 @@ paths:
               properties:
                 avatar:
                   type: string
-                fullName:
+                  default: null
+                name:
                   type: string
                 birthday:
                   type: string
+                  default: "YYYY-MM-DD"
                 gender:
                   type: string
                   enum: [0, 1, 2]
                   description: '0: Nam, 1: Nữ, 2: Khác'
                 email:
                   type: string
-                country:
-                  type: string
                 typeIdCard:
                   type: string
                   enum: [CARD, PASSPORT]
-                dateOfIssue:
-                  type: string
-                placeOfIssue:
-                  type: string
                 numberIdentify:
                   type: string
                 imageFront:
                   type: string
+                  default: null
                 imageBackside:
                   type: string
+                  default: null
       responses:
         '200':
           description: Update successful

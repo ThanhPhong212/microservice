@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 /* eslint-disable no-use-before-define */
 const mongoose = require('mongoose');
 
@@ -52,34 +53,31 @@ const projectSchema = new Schema({
   thumbnail: {
     type: String,
   },
-  createdAt: {
-    type: Date,
-    default: new Date(),
-  },
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
-  updatedAt: {
-    type: Date,
-    default: new Date(),
-  },
-  updatedBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
+  createdAt: { type: String, default: null },
+  updatedAt: { type: String, default: null },
+  createdBy: { type: String, default: null },
+  updatedBy: { type: String, default: null },
 }, {
   toJSON: { getters: true },
   id: false,
 });
 
-// eslint-disable-next-line func-names
+projectSchema.pre('save', function (next) {
+  this.set({ createdAt: new Date().valueOf() });
+  this.set({ updatedAt: new Date().valueOf() });
+  next();
+});
+
+projectSchema.pre(['updateOne', 'findOneAndUpdate', 'updateOne'], function (next) {
+  this.set({ updatedAt: new Date().valueOf() });
+  next();
+});
+
 projectSchema.virtual('thumbnailPath').get(function () {
   if (this.thumbnail) {
-    // eslint-disable-next-line no-underscore-dangle
-    return `${process.env.AVATAR_URL}project/${this._id}/${this.thumbnail}`;
+    return `${process.env.IMAGE_URL}project/${this._id}/${this.thumbnail}`;
   }
-  return `${process.env.AVATAR_URL}/homedefault.png`;
+  return `${process.env.IMAGE_URL}/image_default.jpg`;
 });
 
 const Project = mongoose.model('Project', projectSchema);

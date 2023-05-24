@@ -57,6 +57,7 @@ const vehicleCardSchema = new Schema({
   },
   timeDone: String,
   timeDecline: String,
+  reason: String,
   isDeleted: {
     type: Boolean,
     default: false,
@@ -82,21 +83,21 @@ const vehicleCardSchema = new Schema({
 });
 
 vehicleCardSchema.virtual('frontLicensePath').get(function () {
-  if (!this.vehicleLicense.frontLicense) { return `${process.env.AVATAR_URL}/servicedefault.png`; }
+  if (!this.vehicleLicense.frontLicense) { return `${process.env.IMAGE_URL}/image_default.jpg`; }
   // eslint-disable-next-line no-underscore-dangle
-  return `${process.env.AVATAR_URL}/vehicleCard/${this._id}/${this.vehicleLicense.frontLicense}`;
+  return `${process.env.IMAGE_URL}/vehicleCard/${this._id}/${this.vehicleLicense.frontLicense}`;
 });
 
 vehicleCardSchema.virtual('backsideLicensePath').get(function () {
-  if (!this.vehicleLicense.backsideLicense) { return `${process.env.AVATAR_URL}/servicedefault.png`; }
+  if (!this.vehicleLicense.backsideLicense) { return `${process.env.IMAGE_URL}/image_default.jpg`; }
   // eslint-disable-next-line no-underscore-dangle
-  return `${process.env.AVATAR_URL}/vehicleCard/${this._id}/${this.vehicleLicense.backsideLicense}`;
+  return `${process.env.IMAGE_URL}/vehicleCard/${this._id}/${this.vehicleLicense.backsideLicense}`;
 });
 
 vehicleCardSchema.virtual('vehicleImagePath').get(function () {
-  if (!this.vehicleLicense.vehicleImage) { return `${process.env.AVATAR_URL}/servicedefault.png`; }
+  if (!this.vehicleLicense.vehicleImage) { return `${process.env.IMAGE_URL}/image_default.jpg`; }
   // eslint-disable-next-line no-underscore-dangle
-  return `${process.env.AVATAR_URL}/vehicleCard/${this._id}/${this.vehicleLicense.vehicleImage}`;
+  return `${process.env.IMAGE_URL}/vehicleCard/${this._id}/${this.vehicleLicense.vehicleImage}`;
 });
 
 vehicleCardSchema.pre('save', function (next) {

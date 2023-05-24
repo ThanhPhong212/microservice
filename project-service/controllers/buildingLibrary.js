@@ -89,8 +89,8 @@ exports.editBuildingLibrary = async (req, res) => {
       const check = libraryIns.description.includes(item);
       if (check) {
         libraryIns.description = libraryIns.description.replace(
-          `${process.env.AVATAR_URL}/${item}`,
-          `${process.env.AVATAR_URL}/library/ckEditor/${item}`,
+          `${process.env.IMAGE_URL}/${item}`,
+          `${process.env.IMAGE_URL}/library/ckEditor/${item}`,
         );
         imageAdd.push(item);
       }
@@ -172,12 +172,12 @@ exports.getBuildingLibrary = async (req, res) => {
     library.map((item) => {
       const element = item;
       element._doc.createdBy = {
-        name: userData[element.createdBy].fullName,
-        phone: userData[element.createdBy].phone,
+        name: userData[element.createdBy] ? userData[element.createdBy].name : null,
+        phone: userData[element.createdBy] ? userData[element.createdBy].phone : null,
       };
       element._doc.updatedBy = {
-        name: userData[element.updatedBy].fullName,
-        phone: userData[element.updatedBy].phone,
+        name: userData[element.updatedBy] ? userData[element.updatedBy].name : null,
+        phone: userData[element.updatedBy] ? userData[element.updatedBy].phone : null,
       };
       return element;
     });
@@ -221,12 +221,12 @@ exports.getBuildingLibraryById = async (req, res) => {
 
     // format data
     library._doc.createdBy = {
-      name: userData[library.createdBy].fullName,
+      name: userData[library.createdBy].name,
       phone: userData[library.createdBy].phone,
     };
 
     library._doc.updatedBy = {
-      name: userData[library.updatedBy].fullName,
+      name: userData[library.updatedBy].name,
       phone: userData[library.updatedBy].phone,
     };
 

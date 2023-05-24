@@ -12,4 +12,7 @@ public/device/
 public/ckEditor/
 public/bill/
 public/receipt/
+public/category/
+public/bank/
+public/residentialCard/
 tmp/

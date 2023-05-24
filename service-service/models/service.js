@@ -83,9 +83,9 @@ const serviceSchema = new Schema({
 });
 
 serviceSchema.virtual('thumbnailPath').get(function () {
-  if (!this.thumbnail) { return `${process.env.AVATAR_URL}servicedefault.png`; }
+  if (!this.thumbnail) { return `${process.env.IMAGE_URL}image_default.jpg`; }
   // eslint-disable-next-line no-underscore-dangle
-  return `${process.env.AVATAR_URL}service/${this._id}/${this.thumbnail}`;
+  return `${process.env.IMAGE_URL}service/${this._id}/${this.thumbnail}`;
 });
 
 serviceSchema.pre('save', function (next) {

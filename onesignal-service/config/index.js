@@ -13,4 +13,8 @@ module.exports = {
   logger: {
     file_name: process.env.environment,
   },
+  onesignal: {
+    id: process.env.one_signal_id,
+    key: process.env.one_signal_key,
+  },
 };

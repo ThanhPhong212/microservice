@@ -7,6 +7,7 @@ const roleSchema = new Schema({
   text: String,
   active: {
     type: Boolean,
+    default: true,
   },
 });
 

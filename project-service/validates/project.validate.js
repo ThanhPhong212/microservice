@@ -30,6 +30,5 @@ exports.validateUpdateProject = yup.object().shape({
 
 exports.validateCUDBlock = yup.object().shape({
   name: yup.string().required('Tên block không được để trống!'),
-  numberFloor: yup.number().typeError('Số lượng phải là chữ số!').integer('Số tầng không không được là thập phân!').min(0, 'Số tầng không được là số âm!'),
   numberApartment: yup.number().typeError('Số lượng phải là chữ số!').integer('Số lượng căn hộ không được là thập phân!').min(0, 'Số lượng căn hộ không được là số âm!'),
 });

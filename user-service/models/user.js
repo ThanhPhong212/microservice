@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable no-use-before-define */
 const mongoose = require('mongoose');
@@ -8,94 +9,72 @@ const { data } = require('../config/data');
 const { Schema } = mongoose;
 
 const userSchema = new Schema({
-  idProject: [
-    {
-      type: Schema.Types.ObjectId,
-      require: true,
-    },
-  ],
-  fullName: {
-    type: String,
-    default: null,
-  },
-  avatar: {
-    type: String,
-  },
-  birthday: String,
+  name: String,
+  avatar: { type: String, default: null },
+  birthday: { type: String, default: null },
   gender: {
     type: String,
     enum: [0, 1, 2],
     default: 2,
   },
-  status: {
-    type: Boolean,
-    default: true,
-  },
-  phone: {
-    type: String,
-    unique: true,
-  },
-  userName: {
-    type: String,
-  },
+  status: { type: Boolean, default: true },
+  phone: { type: String, default: null },
+  email: { type: String, default: null },
+  username: { type: String, require: true },
   password: {
     type: String,
+    require: true,
+    default: '$2a$10$zLUFqOmzkY2O/Pth1HlmwO12JcsYIncjRTYQgTAyPRbc/Sc4Bxg26',
   },
-  email: {
-    type: String,
-    default: null,
-  },
-  country: {
-    type: String,
-    default: null,
-  },
+  numberIdentify: String,
+  dateOfIssue: { type: String, default: null },
+  placeOfIssue: String,
+  country: String,
   typeIdCard: {
     type: String,
     enum: ['CARD', 'PASSPORT'],
   },
-  numberIdentify: {
-    type: String,
-    default: null,
-  },
-  dateOfIssue: String,
-  placeOfIssue: String,
   imageIdentify: {
-    front: {
-      type: String,
-      default: null,
-    },
-    backside: {
-      type: String,
-      default: null,
-    },
+    front: { type: String, default: null },
+    backside: { type: String, default: null },
   },
   role: {
     type: Schema.Types.ObjectId,
     ref: 'Role',
     required: true,
   },
-  createdAt: String,
-  createdBy: {
+  parent: {
     type: Schema.Types.ObjectId,
-    default: null,
+    ref: 'User',
   },
-  updatedAt: String,
-  updatedBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
-  isDeleted: {
-    type: Boolean,
-    default: false,
-  },
+  projects: [{ type: String }],
+  isDeleted: { type: Boolean, default: false },
+
+  // cashback
+  refundRatePartner: { type: Number, default: 0 },
+  refundMaxPartner: { type: Number, default: 0 },
+  refundRateCustomer: { type: Number, default: 0 },
+  refundMaxCustomer: { type: Number, default: 0 },
+  address: String,
+  website: String,
+  category: [{ type: String }],
+  APIKey: String,
+  availableBalance: Number,
+  roofie: Number,
+
+  createdAt: { type: String, default: null },
+  updatedAt: { type: String, default: null },
+  createdBy: { type: Schema.Types.ObjectId, default: null },
+  updatedBy: { type: Schema.Types.ObjectId, default: null },
+
 }, {
-  toJSON: { getters: true },
+  toJSON: { getters: true, id: false },
 });
 userSchema.virtual('avatarPath').get(function () {
   if (this.avatar) {
-    return `${process.env.AVATAR_URL}user/${this.id}/avatar/${this.avatar}`;
+    return `${process.env.IMAGE_URL}/user/${this.id}/avatar/${this.avatar}`;
   }
-  return `${process.env.AVATAR_URL}default.jpg`;
+  return `${process.env.IMAGE_URL}/avatar_default.jpg`;
 });
 
 userSchema.pre('save', function (next) {
@@ -110,13 +89,13 @@ userSchema.pre(['updateOne', 'findOneAndUpdate', 'updateOne'], function (next) {
   next();
 });
 userSchema.virtual('imgIdentifyFrontPath').get(function () {
-  if (!this.imageIdentify.front) { return null; }
-  return `${process.env.AVATAR_URL}user/${this.id}/card/${this.imageIdentify.front}`;
+  if (!this.imageIdentify.front) { return `${process.env.IMAGE_URL}/image_default.jpg`; }
+  return `${process.env.IMAGE_URL}/user/${this.id}/card/${this.imageIdentify.front}`;
 });
 
 userSchema.virtual('imgIdentifyBackPath').get(function () {
-  if (!this.imageIdentify.backside) { return null; }
-  return `${process.env.AVATAR_URL}user/${this.id}/card/${this.imageIdentify.backside}`;
+  if (!this.imageIdentify.backside) { return `${process.env.IMAGE_URL}/image_default.jpg`; }
+  return `${process.env.IMAGE_URL}/user/${this.id}/card/${this.imageIdentify.backside}`;
 });
 
 const User = mongoose.model('User', userSchema);
@@ -132,7 +111,9 @@ async function initUser() {
   // create user
   const user = await User.find();
   const listPhoneUser = Array.from(user, ({ phone }) => phone);
-  const listUserCreate = data.user.filter((item) => !listPhoneUser.includes(item.phone));
+  const listUseName = Array.from(user, ({ username }) => username);
+  const listNumberIdentifyUser = Array.from(user, ({ numberIdentify }) => numberIdentify);
+  const listUserCreate = data.user.filter((item) => !listPhoneUser.includes(item.phone) && !listUseName.includes(item.username) && !listNumberIdentifyUser.includes(item.numberIdentify));
   if (listUserCreate.length > 0) {
     const roleId = await Role.find();
     const roleKey = roleId.reduce((acc, cur) => {
@@ -140,9 +121,9 @@ async function initUser() {
       return { ...acc, [id]: cur };
     }, {});
     listUserCreate.map((item) => {
-      // eslint-disable-next-line no-param-reassign
-      item.role = roleKey[item.role]._id;
-      return item;
+      const element = item;
+      element.role = roleKey[element.role]._id;
+      return element;
     });
     await User.insertMany(listUserCreate);
   }

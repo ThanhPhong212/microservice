@@ -23,6 +23,7 @@ const connectRabbit = async () => {
   await channel.assertQueue('FEE-CARD-VEHICLE-GET');
   await channel.assertQueue('FEE-DETAIL-VEHICLE-GET');
   await channel.assertQueue('CARD-CHECK-BILL-INFO');
+  await channel.assertQueue('CARD-DETAIL-FEE-INFO');
 };
 connectRabbit().then(() => {
   channel.consume('FEE-DETAIL-VEHICLE-GET', async (data) => {
@@ -146,6 +147,13 @@ exports.createVehicleCard = async (req, res) => {
     setTimeout(() => eventEmitter.emit('consumeCreate'), 10000);
     const dataApartment = await new Promise((resolve) => { eventEmitter.once('consumeCreate', resolve); });
 
+    if (!dataApartment) {
+      return res.status(400).send({
+        success: false,
+        error: 'Không tìm thấy thông tin căn hộ!',
+      });
+    }
+
     // format data insert
     if (!cardIns.registrationDate) {
       cardIns.registrationDate = new Date().valueOf();
@@ -153,7 +161,7 @@ exports.createVehicleCard = async (req, res) => {
       cardIns.registrationDate = new Date(cardIns.registrationDate).valueOf();
     }
     cardIns.cardCode = cardIns.licensePlate;
-    cardIns.projectId = dataApartment.block.idProject;
+    cardIns.projectId = dataApartment.block.projectId;
     cardIns.createdBy = userId;
     cardIns.parking = cardIns.parkingId;
     if (!cardIns.userId) {
@@ -414,12 +422,11 @@ exports.listVehicleCard = async (req, res) => {
         item._doc.apartment = {
           name: apartmentData[item.apartmentId].apartmentCode,
           block: apartmentData[item.apartmentId].block.name,
-          floor: apartmentData[item.apartmentId].floor.name,
         };
       }
       if (userData) {
         item._doc.subscribers = {
-          name: userData[item.userId].fullName,
+          name: userData[item.userId].name,
           phone: userData[item.userId].phone,
         };
       }
@@ -462,6 +469,13 @@ exports.detailVehicleCard = async (req, res) => {
       .select('-__v -updatedBy -createdBy')
       .populate('parking');
 
+    if (!detail) {
+      return res.status(400).send({
+        success: false,
+        error: 'Thẻ xe không tồn tại!',
+      });
+    }
+
     // get info user
     await channel.sendToQueue('CARD-DETAIL-USER-GET', Buffer.from(JSON.stringify(detail.userId)));
     await channel.consume('CARD-DETAIL-USER-INFO', (userDetail) => {
@@ -482,21 +496,35 @@ exports.detailVehicleCard = async (req, res) => {
     setTimeout(() => eventEmitter.emit('dataApartment'), 10000);
     const apartmentData = await new Promise((resolve) => { eventEmitter.once('dataApartment', resolve); });
 
+    // get info fee vehicle
+    let feeVehicle = 0;
+    if (detail.vehicleType !== 'BICYCLE' && detail.tariff) {
+      await channel.sendToQueue('CARD-DETAIL-FEE-GET', Buffer.from(JSON.stringify({ projectId: detail.projectId, vehicleType: detail.vehicleType })));
+      await channel.consume('CARD-DETAIL-FEE-INFO', (apartmentDetail) => {
+        const dataFee = JSON.parse(apartmentDetail.content);
+        channel.ack(apartmentDetail);
+        eventEmitter.emit('dataFee', dataFee);
+      });
+      setTimeout(() => eventEmitter.emit('dataFee'), 10000);
+      const feeData = await new Promise((resolve) => { eventEmitter.once('dataFee', resolve); });
+      feeVehicle = feeData;
+    }
+
     // format data
     if (apartmentData) {
       detail._doc.apartment = {
         name: apartmentData.apartmentCode,
         block: apartmentData.block.name,
-        floor: apartmentData.floor.name,
       };
       detail._doc.parking = detail.parking.name;
     }
     if (userData) {
       detail._doc.subscribers = {
-        name: userData.fullName,
+        name: userData.name,
         phone: userData.phone,
       };
     }
+    detail._doc.vehicleFee = feeVehicle;
     delete detail._doc.userId;
     delete detail._doc.apartmentId;
 
@@ -517,8 +545,12 @@ exports.listVehicleCardOfUser = async (req, res) => {
     const userId = req.headers.userid;
     const { apartmentId, status } = req.query;
 
-    const card = await VehicleCard.find({ userId, apartmentId, status })
-      .select('licensePlate vehicleBrand vehicleType vehicleColor')
+    const query = { userId, apartmentId };
+    if (status) { query.status = status; }
+
+    const card = await VehicleCard.find(query)
+      .sort({ _id: -1 })
+      .select('licensePlate vehicleBrand vehicleType vehicleColor status')
       .lean();
 
     return res.status(200).send({

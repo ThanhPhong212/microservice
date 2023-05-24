@@ -12,7 +12,7 @@
             "JWT_EXPIRE": "2h",
             "SECRET_REFRESH_KEY": "SEJNUkVGUkVTSFRPS0VO",
             "JWT_REFRESH_EXPIRE": "10d",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL":"http://54.179.172.33:2001/"
         },
         "env_production": {
             "mongoose_url": "mongodb://localhost:27017",
@@ -21,7 +21,7 @@
             "JWT_EXPIRE": "2h",
             "SECRET_REFRESH_KEY": "SEJNUkVGUkVTSFRPS0VO",
             "JWT_REFRESH_EXPIRE": "10d",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL":"http://54.179.172.33:2001/"
         }
     },
     {
@@ -33,12 +33,12 @@
         "env": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "file-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL":"http://54.179.172.33:2001/"
         },
         "env_production": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "file-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL":"http://54.179.172.33:2001/"
         }
     },
     {
@@ -73,12 +73,12 @@
         "env": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "project-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL": "http://54.179.172.33:2001/"
         },
         "env_production": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "project-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL": "http://54.179.172.33:2001/"
         }
     },
     {
@@ -90,14 +90,14 @@
         "env": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "notify-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/",
+            "IMAGE_URL": "http://54.179.172.33:2001/",
             "one_signal_id": "1b8bbba8-a3c8-4498-aeea-89d7fa9d4eab",
             "one_signal_key": "YzdhNTAxZjMtZjg1Zi00YThjLWI3Y2YtODYzZGFmZDg3MDY3"
         },
         "env_production": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "notify-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/",
+            "IMAGE_URL": "http://54.179.172.33:2001/",
             "one_signal_id": "1b8bbba8-a3c8-4498-aeea-89d7fa9d4eab",
             "one_signal_key": "YzdhNTAxZjMtZjg1Zi00YThjLWI3Y2YtODYzZGFmZDg3MDY3"
         }
@@ -111,12 +111,12 @@
         "env": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "service-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL": "http://54.179.172.33:2001/"
         },
         "env_production": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "service-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL": "http://54.179.172.33:2001/"
         }
     },
     {
@@ -128,12 +128,12 @@
         "env": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "request-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL": "http://54.179.172.33:2001/"
         },
         "env_production": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "request-service",
-            "AVATAR_URL": "http://54.179.172.33:2001/"
+            "IMAGE_URL": "http://54.179.172.33:2001/"
         }
     },
     {
@@ -145,12 +145,16 @@
         "env": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "onesignal-service",
-            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb"
+            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb",
+            "one_signal_id": "1b8bbba8-a3c8-4498-aeea-89d7fa9d4eab",
+            "one_signal_key": "YzdhNTAxZjMtZjg1Zi00YThjLWI3Y2YtODYzZGFmZDg3MDY3"
         },
         "env_production": {
             "mongoose_url": "mongodb://localhost:27017",
             "database_name": "onesignal-service",
-            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb"
+            "SECRET_KEY": "8Zz5tw0Ionm3XPZZfN0NOml3z9FMfmpgXwovR9fp6ryDIoGRM8EPHAB6iHsc0fb",
+            "one_signal_id": "1b8bbba8-a3c8-4498-aeea-89d7fa9d4eab",
+            "one_signal_key": "YzdhNTAxZjMtZjg1Zi00YThjLWI3Y2YtODYzZGFmZDg3MDY3"
         }
     },
     {
@@ -160,12 +164,12 @@
         "env": {
           "mongoose_url": "mongodb://localhost:27017",
           "database_name": "parking-service",
-          "AVATAR_URL": "http://54.179.172.33:2001/"
+          "IMAGE_URL": "http://54.179.172.33:2001/"
         },
         "env_production": {
           "mongoose_url": "mongodb://localhost:27017",
           "database_name": "parking-service",
-          "AVATAR_URL": "http://54.179.172.33:2001/"
+          "IMAGE_URL": "http://54.179.172.33:2001/"
         }
     },
     {
@@ -175,12 +179,12 @@
         "env": {
           "mongoose_url": "mongodb://localhost:27017",
           "database_name": "order-service",
-          "AVATAR_URL": "http://54.179.172.33:2001/"
+          "IMAGE_URL": "http://54.179.172.33:2001/"
         },
         "env_production": {
           "mongoose_url": "mongodb://localhost:27017",
           "database_name": "order-service",
-          "AVATAR_URL": "http://54.179.172.33:2001/"
+          "IMAGE_URL": "http://54.179.172.33:2001/"
         }
     },
     {

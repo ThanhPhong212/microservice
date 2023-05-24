@@ -6,42 +6,33 @@ const blockSchema = new Schema({
   name: {
     type: String,
   },
-  idProject: {
+  projectId: {
     type: Schema.Types.ObjectId,
     ref: 'Project',
     require: true,
-  },
-  numberFloor: {
-    type: Number,
-    default: 0,
   },
   numberApartment: {
     type: Number,
     default: 0,
   },
-  floor: [{
-    name: String,
-  }],
   isDeleted: {
     type: Boolean,
     default: false,
   },
-  createdAt: {
-    type: Date,
-    default: new Date(),
-  },
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
-  updatedAt: {
-    type: Date,
-    default: new Date(),
-  },
-  updatedBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
+  createdAt: { type: String, default: null },
+  updatedAt: { type: String, default: null },
+  createdBy: { type: String, default: null },
+  updatedBy: { type: String, default: null },
+});
+
+blockSchema.pre('save', function (next) {
+  this.set({ createdAt: new Date().valueOf() });
+  this.set({ updatedAt: new Date().valueOf() });
+  next();
+});
+blockSchema.pre(['updateOne', 'findOneAndUpdate', 'updateOne'], function (next) {
+  this.set({ updatedAt: new Date().valueOf() });
+  next();
 });
 
 const Block = mongoose.model('Block', blockSchema);

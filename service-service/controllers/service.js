@@ -215,7 +215,7 @@ exports.getListService = async (req, res) => {
             type: 'string',
           },
           {
-            value: 'fullName',
+            value: 'name',
             type: 'string',
           },
         ],
@@ -269,7 +269,7 @@ exports.getListService = async (req, res) => {
       await Promise.all(service.map(async (item) => {
         const element = item;
         const dayOfWeek = [];
-        if (!element.createdBy?.fullName) {
+        if (!element.createdBy?.name) {
           if (!dataConsume) {
             return element;
           }
@@ -396,8 +396,8 @@ exports.cshGetServiceById = async (req, res) => {
     delete service._doc.setupDayOfWeek;
     delete service._doc.setupEveryDay;
     return res.status(200).send({
-      success: false,
-      error: service,
+      success: true,
+      data: service,
     });
   } catch (error) {
     return res.status(400).send({

@@ -43,7 +43,7 @@ const searchBlock = async (search) => {
   try {
     const block = await Block.find({
       name: { $regex: search.keywords, $options: 'i' },
-      idProject: search.projectId,
+      projectId: search.projectId,
     }).select('_id');
     return block;
   } catch (error) {
@@ -98,11 +98,7 @@ exports.createBlock = async (req, res) => {
     const project = await Project.findById(projectId);
     blockIns.updatedBy = userId;
     blockIns.createdBy = userId;
-    blockIns.idProject = projectId;
-    if (blockIns.numberFloor > 0) {
-      const floor = Array.from({ length: blockIns.numberFloor }, (_, index) => ({ name: `Tầng ${index + 1}` }));
-      blockIns.floor = floor;
-    }
+    blockIns.projectId = projectId;
     await Block.create(blockIns, async (err, block) => {
       if (err) {
         return res.status(400).send({
@@ -151,29 +147,6 @@ exports.updateBlock = async (req, res) => {
       });
     }
 
-    const block = await Block.findOne({ _id: blockId, idProject: projectId, isDeleted: false });
-    if (blockIns.numberFloor > 0) {
-      if (blockIns.numberFloor > block.floor.length) {
-        const floor = Array.from(
-          { length: blockIns.numberFloor - block.floor.length },
-          (_, index) => ({ name: `Tầng ${block.floor.length + index + 1}` }),
-        );
-        blockIns.floor = [...block.floor, ...floor];
-      }
-      if (blockIns.numberFloor < block.floor.length) {
-        const arrayRemove = block.floor.filter((item, index) => index >= blockIns.numberFloor);
-        const arrayIdFloor = Array.from(arrayRemove, ({ _id }) => _id);
-        const apartment = await Apartment.count({ 'floor._id': { $in: arrayIdFloor } });
-        if (apartment > 0) {
-          return res.status(400).send({
-            success: false,
-            error: 'Tầng có chứa căn hộ',
-          });
-        }
-        const floor = block.floor.filter((item, index) => index < blockIns.numberFloor);
-        blockIns.floor = floor;
-      }
-    }
     await Block.updateOne({ _id: blockId }, blockIns);
     if (blockIns.isDeleted) {
       const index = project.block.indexOf(blockId);

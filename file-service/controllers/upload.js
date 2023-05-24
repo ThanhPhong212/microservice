@@ -27,24 +27,26 @@ const connectRabbit = async () => {
   await channel.assertQueue('CKEDITOR-DELETE');
   await channel.assertQueue('ORDER-EXPORT-GET');
   await channel.assertQueue('RECEIPT-EXPORT-GET');
+  await channel.assertQueue('FILE-CATEGORY-CHANGE');
 };
 
-const convertExcelToJson = (data) => {
+const convertExcelToJson = async (data) => {
   try {
     const month = `${new Date().getMonth()}-${new Date().getFullYear()}`;
     const path = __dirname.replace('controllers', `public/device/${data.projectId}/${month}/${data.type}/${data.file}`);
     if (!fs.existsSync(path)) {
       return [];
     }
-    const wb = xlsx.readFile(path);
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const dataExcel = xlsx.utils.sheet_to_json(ws, { raw: true });
-    return dataExcel;
+    const wb = await xlsx.readFile(path);
+    const ws = await wb.Sheets[wb.SheetNames[0]];
+    const dataExcel = await xlsx.utils.sheet_to_json(ws, { raw: true });
+    return dataExcel ?? [];
   } catch (error) {
     logger.error(error);
     return [];
   }
 };
+
 const convertJsonIntoExcel = (data) => {
   const date = new Date().valueOf();
   const workSheet = xlsx.utils.json_to_sheet(data.json);
@@ -53,8 +55,9 @@ const convertJsonIntoExcel = (data) => {
   xlsx.write(workBook, { bookType: 'xlsx', type: 'buffer' });
   xlsx.write(workBook, { bookType: 'xlsx', type: 'binary' });
   xlsx.writeFile(workBook, `${data.path}/${data.type}_${date}.xlsx`);
-  return `${process.env.AVATAR_URL}/${data.type}/${data.month}/${data.type}_${date}.xlsx`;
+  return `${process.env.IMAGE_URL}/${data.type}/${data.month}/${data.type}_${date}.xlsx`;
 };
+
 connectRabbit().then(() => {
   channel.consume('RECEIPT-EXPORT-GET', async (info) => {
     try {
@@ -110,6 +113,10 @@ connectRabbit().then(() => {
           path = `notify/${dtum.id}`;
           type = 'NOTIFY';
         }
+        if (value === 'category') {
+          path = `category/${dtum.id}`;
+          type = 'CATEGORY';
+        }
         if (value === 'service') {
           path = `service/${dtum.id}`;
           type = 'SERVICE';
@@ -117,6 +124,10 @@ connectRabbit().then(() => {
         if (value === 'request') {
           path = `request/${dtum.id}`;
           type = 'REQUEST';
+        }
+        if (value === 'residentialCard') {
+          path = `residentialCard/${dtum.id}`;
+          type = 'RESIDENTIAL_CARD';
         }
         if (value === 'backsideLicense' || value === 'frontLicense' || value === 'vehicleImage') {
           path = `vehicleCard/${dtum.id}`;
@@ -127,8 +138,7 @@ connectRabbit().then(() => {
         if (dtum.fileSave[value]) {
           const wait = moveFile(dtum.fileSave[value], null, path);
           if (wait) {
-            // eslint-disable-next-line object-shorthand
-            await FILE.create({ fileName: dtum.fileSave[value], type: type, userId: dtum.userId });
+            await FILE.create({ fileName: dtum.fileSave[value], type, userId: dtum.userId });
           }
         }
         return true;
@@ -162,16 +172,20 @@ connectRabbit().then(() => {
           if (value === 'device') {
             fsExtra.emptyDirSync(dir);
           }
-          const wait = moveFile(dtum.fileSave[value], null, path);
-          if (wait) {
-            await FILE.create({ fileName: dtum.fileSave[value], type, userId: dtum.userId });
-            if (value === 'device') {
-              const convert = convertExcelToJson({
-                file: dtum.fileSave[value], type: dtum.type, projectId: dtum.projectId,
-              });
-              channel.sendToQueue('FILE-DATA-EXCEL', Buffer.from(JSON.stringify(convert)));
+          const wait = await moveFile(dtum.fileSave[value], null, path);
+          setTimeout(async () => {
+            if (wait) {
+              await FILE.create({ fileName: dtum.fileSave[value], type, userId: dtum.userId });
+              if (value === 'device') {
+                const convert = await convertExcelToJson({
+                  file: dtum.fileSave[value], type: dtum.type, projectId: dtum.projectId,
+                });
+                channel.sendToQueue('FILE-DATA-EXCEL', Buffer.from(JSON.stringify(convert)));
+              }
+            } else if (value === 'device') {
+              channel.sendToQueue('FILE-DATA-EXCEL', Buffer.from(JSON.stringify([])));
             }
-          }
+          }, 250);
         }
         return true;
       } catch (error) {
@@ -384,6 +398,33 @@ connectRabbit().then(() => {
       logger.error(error.message);
     }
   });
+
+  // Change vehicle papers
+  channel.consume('FILE-CATEGORY-CHANGE', (data) => {
+    try {
+      const dtum = JSON.parse(data.content);
+      channel.ack(data);
+      const path = `category/${dtum.id}`;
+      Object.keys(dtum.fileSave).forEach(async (value) => {
+        try {
+          const dataHandle = {
+            type: 'CATEGORY',
+            path,
+            newFile: dtum.fileSave[value].newFile,
+            oldFile: dtum.fileSave[value].oldFile,
+            dtum,
+          };
+          handleSaveFile(dataHandle);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      });
+    } catch (error) {
+      logger.error(error.message);
+      return false;
+    }
+  });
 });
 
 const uploadImage = async (req, res) => {
@@ -408,7 +449,7 @@ const uploadImage = async (req, res) => {
       }
       return res.status(200).send({
         success: true,
-        data: { file_name: file.name, fullPath: `${process.env.AVATAR_URL}/${file.name}` },
+        data: { fileName: file.name, fullPath: `${process.env.IMAGE_URL}/${file.name}` },
       });
     });
   } catch (error) {
@@ -431,7 +472,6 @@ const uploadFile = async (req, res) => {
     const date = new Date();
     file.name = `${file.md5}-${date.valueOf()}.${file.name.split('.').pop()}`;
     const path = __dirname.replace('controllers', `tmp/${file.name}`);
-    // eslint-disable-next-line consistent-return
     await file.mv(path, async (err) => {
       if (err) {
         return res.status(400).send({
@@ -441,7 +481,7 @@ const uploadFile = async (req, res) => {
       }
       return res.status(200).send({
         success: true,
-        data: { file_name: file.name, fullPath: `${process.env.AVATAR_URL}/${file.name}` },
+        data: { fileName: file.name, fullPath: `${process.env.IMAGE_URL}/${file.name}` },
       });
     });
   } catch (error) {
@@ -480,7 +520,7 @@ const uploadVideo = async (req, res) => {
       }
       return res.status(200).send({
         success: true,
-        data: { file_name: file.name, fullPath: `${process.env.AVATAR_URL}/${file.name}` },
+        data: { fileName: file.name, fullPath: `${process.env.IMAGE_URL}/${file.name}` },
       });
     });
   } catch (error) {
@@ -515,7 +555,7 @@ const uploadProject = async (req, res) => {
           error: err.message,
         });
       }
-      if (thumbnail !== file.name && thumbnail !== 'homedefault.png') {
+      if (thumbnail !== file.name && thumbnail !== 'image_default.jpg') {
         const unPath = __dirname.replace('controllers', `public/${path}/${thumbnail}`);
         if (fs.existsSync(unPath)) {
           fs.unlinkSync(unPath);
@@ -550,7 +590,6 @@ const uploadProject = async (req, res) => {
   }
 };
 
-// Upload files for CKEditor
 const uploadFileEditor = async (req, res) => {
   try {
     if (!req.files) {
@@ -574,7 +613,7 @@ const uploadFileEditor = async (req, res) => {
       }
       await channel.sendToQueue('CKEDITOR-LIBRARY', Buffer.from(JSON.stringify(upload.name)));
       await channel.sendToQueue('CKEDITOR-NOTIFY', Buffer.from(JSON.stringify(upload.name)));
-      return res.status(200).send({ url: `${process.env.AVATAR_URL}/${upload.name}` });
+      return res.status(200).send({ url: `${process.env.IMAGE_URL}/${upload.name}` });
     });
   } catch (error) {
     return res.status(200).send({

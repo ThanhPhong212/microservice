@@ -13,9 +13,45 @@ const connectRabbit = async () => {
   channel = await conn.createChannel();
   await channel.assertQueue('FEE-CONFIG-USER-INFO');
   await channel.assertQueue('FEE-CONFIG-USERID-INFO');
+  await channel.assertQueue('CARD-DETAIL-FEE-GET');
 };
 
-connectRabbit();
+connectRabbit().then(() => {
+  channel.consume('CARD-DETAIL-FEE-GET', async (data) => {
+    try {
+      const {
+        projectId,
+        vehicleType,
+      } = JSON.parse(data.content);
+      channel.ack(data);
+
+      const fee = await FeeConfig.findOne({ vehicle: vehicleType, projectId });
+      let valueFee = 0;
+      if (!fee) {
+        valueFee = `Chưa cập nhật phí xe ${vehicleType === 'MOTOR' ? 'máy!' : 'ô tô!'}`;
+      } else {
+        let { price } = fee;
+        if (fee.surcharge.length) {
+          const priceVehicle = price;
+          fee.surcharge.map((item) => {
+            if (item.isPercent) {
+              price += (priceVehicle / 100).toFixed(1) * item.value;
+            } else {
+              price += item.value;
+            }
+            return item;
+          });
+        }
+        valueFee = price;
+      }
+
+      channel.sendToQueue('CARD-DETAIL-FEE-INFO', Buffer.from(JSON.stringify(valueFee)));
+    } catch (error) {
+      const dataAvailable = 0;
+      channel.sendToQueue('CARD-DETAIL-FEE-INFO', Buffer.from(JSON.stringify(dataAvailable)));
+    }
+  });
+});
 
 exports.createFeeConfig = async (req, res) => {
   try {
@@ -89,7 +125,7 @@ exports.getListFeeConfig = async (req, res) => {
     listFeeConfig.map((item) => {
       const element = item;
       element._doc.createdBy = {
-        name: dataUser[item.createdBy].fullName,
+        name: dataUser[item.createdBy].name,
         phone: dataUser[item.createdBy].phone,
       };
       return element;
@@ -124,7 +160,7 @@ exports.getFeeConfigById = async (req, res) => {
 
     // format data
     feeConfig._doc.createdBy = {
-      name: dataUser.fullName,
+      name: dataUser.name,
       phone: dataUser.phone,
     };
 

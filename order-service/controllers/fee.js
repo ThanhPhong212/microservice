@@ -437,24 +437,23 @@ exports.listFee = async (req, res) => {
         if (feeType.name === 'VEHICLE') {
           listFee = listFee.filter((item) => item.consumption > 0 || item.deviceId);
         }
-        listFee.map((item) => {
+        listFee.map((item, index) => {
           item._doc.apartment = {
             name: dataApartment[item.apartmentId].apartmentCode,
             owner: {
-              name: dataUser[dataApartment[item.apartmentId].owner].fullName,
+              name: dataUser[dataApartment[item.apartmentId].owner].name,
               phone: dataUser[dataApartment[item.apartmentId].owner].phone,
             },
             block: dataApartment[item.apartmentId].block.name,
-            floor: dataApartment[item.apartmentId].floor.name,
           };
           item._doc.createdBy = {
-            name: dataUser[item.createdBy].fullName,
+            name: dataUser[item.createdBy].name,
             phone: dataUser[item.createdBy].phone,
           };
           if (vehicleCard && vehicleCard[item.apartmentId] && vehicleCard[item.apartmentId].vehicles) {
             vehicleCard[item.apartmentId].vehicles.map((element) => {
               element.userId = {
-                name: dataUser[element.userId].fullName,
+                name: dataUser[element.userId].name,
                 phone: dataUser[element.userId].phone,
               };
               delete element.vehicleLicense;
@@ -468,6 +467,8 @@ exports.listFee = async (req, res) => {
             });
             item._doc.vehicleCard = vehicleCard[item.apartmentId].vehicles.filter((x) => orderVehicle.includes(x.cardCode));
             delete item._doc.apartmentId;
+          } else if (feeType.name === 'VEHICLE') {
+            listFee.splice(index, 1);
           }
           return item;
         });
@@ -1009,7 +1010,7 @@ exports.createFeeDevice = async (req, res) => {
     const feeConfig = await FeeConfig.findOne({
       feeTypeId: feeWaterIns.feeTypeId, projectId: feeWaterIns.projectId,
     }).populate('feeTypeId');
-    if (feeWaterIns.useFeeConfig && !feeConfig) {
+    if (!feeConfig) {
       return res.status(400).send({
         success: false,
         error: 'Chưa cấu hình biểu phí cho loại phí này!',
@@ -1038,12 +1039,31 @@ exports.createFeeDevice = async (req, res) => {
     });
     setTimeout(() => eventEmitter.emit('consumeFee'), 10000);
     const fileExcelData = await new Promise((resolve) => { eventEmitter.once('consumeFee', resolve); });
-    if (fileExcelData.length === 0) {
+    if (!fileExcelData || !fileExcelData.length) {
       return res.status(400).send({
         success: false,
-        error: 'Tải file thất bại !',
+        error: 'Tệp tin không hợp lệ!',
       });
     }
+    if (!fileExcelData[0].SH1) {
+      return res.status(400).send({
+        success: false,
+        error: 'Tệp tin không hợp lệ!',
+      });
+    }
+    if (feeConfig.feeTypeId.name === 'ELECTRIC' && !fileExcelData[0].SH6) {
+      return res.status(400).send({
+        success: false,
+        error: 'Tệp tin không hợp lệ!',
+      });
+    }
+    if (feeConfig.feeTypeId.name === 'WATER' && fileExcelData[0].SH6) {
+      return res.status(400).send({
+        success: false,
+        error: 'Tệp tin không hợp lệ!',
+      });
+    }
+
     const fileData = fileExcelData.reduce((acc, cur) => {
       const id = cur['Mã thiết bị'];
       return { ...acc, [id]: cur };
@@ -1410,7 +1430,7 @@ exports.createFeeDevice = async (req, res) => {
   } catch (error) {
     return res.status(400).send({
       success: false,
-      error: error.message,
+      error,
     });
   }
 };

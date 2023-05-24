@@ -3,22 +3,25 @@ const FILE = require('../models/file');
 const logger = require('./logger/index');
 
 // eslint-disable-next-line default-param-last
-const moveFile = (fileName, oldFileName = null, path) => {
+const moveFile = async (fileName, oldFileName = null, path) => {
   try {
     // move avatar from tmp folder to upload
     if (oldFileName) {
       try {
         if (oldFileName !== fileName) {
           const unPath = __dirname.replace('utils', `public/${path}/${oldFileName}`);
-          fs.unlinkSync(unPath);
+          await fs.unlinkSync(unPath);
         }
         // eslint-disable-next-line no-empty
       } catch (error) {
       }
     }
     const tmpPath = __dirname.replace('utils', `tmp/${fileName}`);
+    if (!fs.existsSync(tmpPath)) {
+      return false;
+    }
     const uploadPath = __dirname.replace('utils', `public/${path}/${fileName}`);
-    fs.rename(tmpPath, uploadPath, async (err) => {
+    await fs.rename(tmpPath, uploadPath, (err) => {
       if (!err) {
         return false;
       }

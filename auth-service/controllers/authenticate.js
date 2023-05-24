@@ -37,12 +37,12 @@ exports.authenticate = async (req, res, next) => {
   try {
     const token = req.headers.authorization;
     if (!token) {
-      return next('Please login to access the data');
+      return next('Please login to access the data!');
     }
     const bearerToken = token.split(' ')[1];
     const verify = jwt.verify(bearerToken, process.env.SECRET_KEY);
-    const data = { userId: verify._id };
-    const auth = await Auth.findOne({ userId: verify._id }).exec();
+    const data = { userId: verify._id, role: verify.role };
+    const auth = await Auth.findOne({ userId: verify._id });
     if (!auth) {
       return res.status(401).send({
         success: false,
@@ -73,8 +73,8 @@ exports.createRefreshToken = async (req, res) => {
       });
     }
     const verify = jwt.verify(refreshToken, process.env.SECRET_REFRESH_KEY);
-    const { _id } = verify;
-    const token = jwt.sign({ _id }, process.env.SECRET_KEY, {
+    const { _id, name, role } = verify;
+    const token = jwt.sign({ _id, name, role }, process.env.SECRET_KEY, {
       expiresIn: process.env.JWT_EXPIRE,
     });
     const userAuth = await Auth.findOne({ userId: _id });

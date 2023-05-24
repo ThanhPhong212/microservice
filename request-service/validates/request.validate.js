@@ -3,7 +3,6 @@ const yup = require('yup');
 exports.create = yup.object().shape({
   type: yup.string().required(),
   blockId: yup.string().nullable(true),
-  floorId: yup.string().nullable(true),
   descriptionFile: yup.string().min(10).nullable(true),
   status: yup.mixed().oneOf(['NEW', 'ACCEPT', 'COMPLETE', 'CANCEL']),
   otherContact: yup.string().nullable(true),

@@ -15,9 +15,6 @@ const {
   sentBill,
   exportBill,
   updateBill,
-  revenueStatistics,
-  debtStatistics,
-  listDebt,
 } = require('../controllers/order');
 const validation = require('../middlewares/validation');
 const { createFeeValidate } = require('../validates/fee.validate');
@@ -53,10 +50,5 @@ module.exports = (app, router) => {
   router.put('/order/accounting', editExpenses);
   router.get('/order/accounting', listAccounting);
 
-  router.get('/order/statistics/revenue', revenueStatistics);
-  router.get('/order/statistics/debt', debtStatistics);
-  router.get('/order/statistics/list-debt', listDebt);
-
-  // step
   app.use('/v1', router);
 };

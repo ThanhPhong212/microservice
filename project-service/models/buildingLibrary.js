@@ -14,20 +14,10 @@ const buildingLibrarySchema = new Schema({
   file: String,
   imageCKEditor: [],
   description: String,
-  createdAt: {
-    type: String,
-  },
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
-  updatedAt: {
-    type: String,
-  },
-  updatedBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
+  createdAt: { type: String, default: null },
+  updatedAt: { type: String, default: null },
+  createdBy: { type: String, default: null },
+  updatedBy: { type: String, default: null },
 }, {
   toJSON: { getters: true },
   id: false,
@@ -36,7 +26,7 @@ const buildingLibrarySchema = new Schema({
 buildingLibrarySchema.virtual('filePath').get(function () {
   if (this.file) {
     // eslint-disable-next-line no-underscore-dangle
-    return `${process.env.AVATAR_URL}library/${this._id}/${this.file}`;
+    return `${process.env.IMAGE_URL}library/${this._id}/${this.file}`;
   }
   return null;
 });

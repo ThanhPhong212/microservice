@@ -62,7 +62,7 @@ exports.registration = async (req, res) => {
     const dataApartment = await new Promise(
       (resolve) => eventEmitter.once('consumeCreate', resolve),
     );
-    registerIns.projectId = dataApartment.block.idProject;
+    registerIns.projectId = dataApartment.block.projectId;
 
     const service = await Service.findById(registerIns.serviceId);
     if (service.projectId != registerIns.projectId) {
@@ -200,7 +200,7 @@ exports.registration = async (req, res) => {
         registerTime = registerTime.concat(setupTime({ from, to }));
       });
       if (registerTime.length > 0) {
-        const size = registerIns.adult + registerIns.child;
+        const size = parseInt(registerIns.adult) + parseInt(registerIns.child);
         registerTime.map((item) => {
           if (listTime[item].sizeTotal >= slotConfigTime[item] || listTime[item].sizeTotal + size > slotConfigTime[item]) {
             slotInTime.push(item);
@@ -340,7 +340,7 @@ exports.listRegistration = async (req, res) => {
       item._doc.slot = item.service.slotConfig && item.service.slotConfig[item.slotId] ? item.service.slotConfig[item.slotId].slotName : null;
       item._doc.service = item.service.name;
       item._doc.subscribers = {
-        name: dataUser[item.userId].fullName,
+        name: dataUser[item.userId].name,
         phone: dataUser[item.userId].phone,
         block: dataApartment[item.apartmentId].block.name,
         apartment: dataApartment[item.apartmentId].apartmentCode,
@@ -383,14 +383,14 @@ exports.userRegistrationHistory = async (req, res) => {
       .sort({ _id: -1 })
       .skip((currentPage - 1) * perPage)
       .limit(perPage)
-      .select('service time status')
-      .populate('service', 'name file');
+      .select('-__v')
+      .populate('service', 'name thumbnail');
 
     // format data
     history.map((item) => {
-      item._doc.imageService = item.service.file;
-      item._doc.imageServicePath = item.service.filePath;
-      item._doc.service = item.service.name;
+      item._doc.imageService = item.service.thumbnail;
+      item._doc.imageServicePath = item.service.thumbnailPath;
+      item._doc.serviceName = item.service.name;
       return item;
     });
 
@@ -454,11 +454,10 @@ exports.registrationDetails = async (req, res) => {
       register.service.slotConfig = slotConfig;
     }
     register.slot = register.service.slotConfig && register.service.slotConfig[register.slotId] ? register.service.slotConfig[register.slotId].slotName : null;
-    register.createdBy = dataUser.fullName;
+    register.createdBy = dataUser.name;
     register.phone = dataUser.phone;
     register.apartment = {
       name: dataApartment ? dataApartment.apartmentCode : null,
-      floor: dataApartment ? dataApartment.floor.name : null,
       block: dataApartment ? dataApartment.block.name : null,
     };
     register.service = register.service.name;

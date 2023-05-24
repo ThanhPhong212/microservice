@@ -3,6 +3,11 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const apartmentSchema = new Schema({
+  project: {
+    type: Schema.Types.ObjectId,
+    ref: 'Project',
+    required: true,
+  },
   apartmentCode: {
     type: String,
   },
@@ -15,10 +20,6 @@ const apartmentSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'Block',
     required: true,
-  },
-  floor: {
-    _id: String,
-    name: String,
   },
   areaApartment: {
     type: Number,
@@ -50,23 +51,26 @@ const apartmentSchema = new Schema({
     type: String,
     default: null,
   },
-  apartmentWallet: {
-    type: String,
-  },
-  description: {
-    type: String,
-  },
-  createdBy: {
-    type: String,
-  },
-  updatedBy: {
-    type: String,
-  },
+  apartmentWallet: String,
+  description: String,
+  createdAt: { type: String, default: null },
+  updatedAt: { type: String, default: null },
+  createdBy: { type: String, default: null },
+  updatedBy: { type: String, default: null },
   status: {
     type: Boolean,
     default: true,
   },
 });
 
+apartmentSchema.pre('save', function (next) {
+  this.set({ createdAt: new Date().valueOf() });
+  this.set({ updatedAt: new Date().valueOf() });
+  next();
+});
+apartmentSchema.pre(['updateOne', 'findOneAndUpdate', 'updateOne'], function (next) {
+  this.set({ updatedAt: new Date().valueOf() });
+  next();
+});
 const Apartment = mongoose.model('Apartment', apartmentSchema);
 module.exports = Apartment;

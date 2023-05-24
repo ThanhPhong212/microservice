@@ -10,7 +10,7 @@ exports.createTypeApartment = async (req, res) => {
     const { projectId } = req.params;
     const project = await Project.findById(projectId);
     typeApartmentIns.updatedBy = userId;
-    typeApartmentIns.idProject = projectId;
+    typeApartmentIns.projectId = projectId;
 
     typeApartmentIns.createdBy = userId;
     await TypeApartment.create(typeApartmentIns, async (err, result) => {

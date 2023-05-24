@@ -6,7 +6,7 @@ const typeApartmentSchema = new Schema({
   name: {
     type: String,
   },
-  idProject: {
+  projectId: {
     type: Schema.Types.ObjectId,
     ref: 'Project',
     require: true,
@@ -35,23 +35,20 @@ const typeApartmentSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  createdAt: {
-    type: Date,
-    default: new Date(),
-  },
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
-  updatedAt: {
-    type: Date,
-    default: new Date(),
-  },
-  updatedBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
+  createdAt: { type: String, default: null },
+  updatedAt: { type: String, default: null },
+  createdBy: { type: String, default: null },
+  updatedBy: { type: String, default: null },
 });
 
+typeApartmentSchema.pre('save', function (next) {
+  this.set({ createdAt: new Date().valueOf() });
+  this.set({ updatedAt: new Date().valueOf() });
+  next();
+});
+typeApartmentSchema.pre(['updateOne', 'findOneAndUpdate', 'updateOne'], function (next) {
+  this.set({ updatedAt: new Date().valueOf() });
+  next();
+});
 const TypeApartment = mongoose.model('TypeApartment', typeApartmentSchema);
 module.exports = TypeApartment;

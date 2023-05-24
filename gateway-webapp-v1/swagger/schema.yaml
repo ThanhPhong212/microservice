@@ -106,7 +106,7 @@ paths:
               properties:
                 avatar:
                   type: string
-                fullName:
+                name:
                   type: string
                 birthday:
                   type: string
@@ -202,8 +202,6 @@ paths:
                   required: true
                 toBlock:
                   type: string
-                toFloor:
-                  type: string
                 toApartment:
                   type: string
       responses:
@@ -245,8 +243,7 @@ paths:
                   enum: [IMPORTANCE, NOT-IMPORTANCE]
                 toBlock:
                   type: string
-                toFloor:
-                  type: string
+                
                 toApartment:
                   type: string
       responses:
@@ -288,7 +285,7 @@ paths:
       summary: 'List Notification'
       parameters:
         - in: query
-          name: idProject
+          name: projectId
           schema:
             type: string
           required: true
@@ -432,10 +429,6 @@ paths:
               properties:
                 block:
                   type: string
-                floorId:
-                  type: string
-                floorName:
-                  type: string
                 apartmentCode:
                   type: string
                 typeApartment:
@@ -501,8 +494,6 @@ paths:
               properties:
                 name:
                   type: string
-                numberFloor:
-                  type: number
                 numberApartment:
                   type: number
       responses:
@@ -544,8 +535,6 @@ paths:
               properties:
                 name:
                   type: string
-                numberFloor:
-                  type: number
                 numberApartment:
                   type: number
                 isDeleted:
@@ -676,7 +665,7 @@ paths:
       responses:
         '200':
           description: Successful operation
-
+          
     post:
       security:
         - bearerAuth: []
@@ -789,7 +778,7 @@ paths:
   #               tenant:
   #                 type: array
   #                 example: ["objectid1", "objectid2"]
-  #               idProject:
+  #               projectId:
   #               member:
   #                 type: array
   #                 example: ["objectid1", "objectid2"]
@@ -812,31 +801,6 @@ paths:
   #         description: successful
   #       '400':
   #         description: failure
-
-  /v1/project/floor/{id}:
-    get:
-      security:
-        - bearerAuth: []
-      tags:
-        - project
-      summary: 'List apartment by floor'
-      description: 'List apartment by floor'
-      parameters:
-        - name: id
-          in: path
-          description: Floor ID
-          required: true
-          schema:
-            type: string
-      consumes:
-        - 'application/json'
-      produces:
-        - 'application/json'
-      responses:
-        '200':
-          description: successful
-        '400':
-          description: failure
 
   /v1/services/list:
     get:

@@ -14,7 +14,6 @@ const {
   listApartment,
   getApartmentById,
   editApartmentById,
-  listApartmentByFloor,
   getApartmentByBlock,
   listResidentInApartment,
 } = require('../controllers/apartment');
@@ -29,6 +28,7 @@ const {
   deleteBuildingLibrary,
 } = require('../controllers/buildingLibrary');
 const { createLibraryValidate, editLibraryValidate } = require('../validates/buildingLibrary.validate');
+const { listCard, detailResidentialCard, updateResidentialCard } = require('../controllers/residentialCard');
 
 module.exports = (app, router) => {
   router.get('/project/list', listProject);
@@ -45,7 +45,6 @@ module.exports = (app, router) => {
   router.get('/project/apartment/:apartmentId', getApartmentById);
   router.put('/project/apartment/:apartmentId', validation(validateUpdateApartment), editApartmentById);
   router.get('/project/:id', getProjectById);
-  router.get('/project/floor/:id', listApartmentByFloor);
   router.get('/project/block/:blockId', getApartmentByBlock);
 
   // Building Library
@@ -54,5 +53,10 @@ module.exports = (app, router) => {
   router.post('/project/library-building', validation(createLibraryValidate), createBuildingLibrary);
   router.put('/project/library-building/:libraryId', validation(editLibraryValidate), editBuildingLibrary);
   router.delete('/project/library-building/:libraryId', deleteBuildingLibrary);
+
+  // thẻ cư dân
+  router.get('/project/residential-card/list', listCard);
+  router.get('/project/residential-card/:cardId', detailResidentialCard);
+  router.put('/project/residential-card/:cardId', updateResidentialCard);
   app.use('/v1', router);
 };

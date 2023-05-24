@@ -84,7 +84,7 @@ const searchApartment = async (apartmentSearch) => {
         { owner: { $in: apartmentSearch.dataUserId } },
       ],
     }).populate('block');
-    const take = apartment.filter((item) => item.block.idProject == apartmentSearch.projectId);
+    const take = apartment.filter((item) => item.block.projectId == apartmentSearch.projectId);
     const listIdApartment = Array.from(take, ({ _id }) => _id);
     return listIdApartment;
   } catch (error) {
@@ -173,7 +173,7 @@ connectRabbit().then(() => {
     try {
       const { projectId, userId } = JSON.parse(data.content);
       channel.ack(data);
-      const listIdBlock = await Block.find({ idProject: projectId });
+      const listIdBlock = await Block.find({ projectId });
       const listBlockId = Array.from(listIdBlock, ({ _id }) => _id);
       const dataApartment = await Apartment.find({
         block: { $in: listBlockId },
@@ -238,14 +238,14 @@ connectRabbit().then(() => {
         .populate({
           path: 'block',
           populate: {
-            path: 'idProject',
+            path: 'projectId',
             select: 'name thumbnail',
           },
           select: 'name',
         })
         .select('apartmentCode project');
       ApartmentOwner.map((item) => {
-        item._doc.picture = item.block.idProject.thumbnailPath;
+        item._doc.picture = item.block.projectId.thumbnailPath;
         delete item._doc.block;
         return item;
       });
@@ -284,7 +284,7 @@ connectRabbit().then(() => {
     try {
       const info = JSON.parse(data.content);
       channel.ack(data);
-      const block = await Block.find({ idProject: info.projectId });
+      const block = await Block.find({ projectId: info.projectId });
       const blockId = Array.from(block, ({ _id }) => _id);
       const apartment = await Apartment.find({
         block: { $in: blockId },
@@ -343,7 +343,7 @@ connectRabbit().then(() => {
       const projectId = JSON.parse(data.content);
       channel.ack(data);
 
-      const block = await Block.find({ idProject: projectId });
+      const block = await Block.find({ projectId });
 
       const listIdBlock = Array.from(block, ({ _id }) => _id);
 
@@ -360,7 +360,7 @@ connectRabbit().then(() => {
       const projectId = JSON.parse(data.content);
       channel.ack(data);
 
-      const block = await Block.find({ idProject: projectId });
+      const block = await Block.find({ projectId });
 
       const listIdBlock = Array.from(block, ({ _id }) => _id);
 
@@ -370,7 +370,6 @@ connectRabbit().then(() => {
         const id = cur._id;
         return { ...acc, [id]: cur };
       }, {});
-
       channel.sendToQueue('FEE-CREATE-VEHICLE-APARTMENT-INFO', Buffer.from(JSON.stringify(apartmentData)));
     } catch (error) {
       const dataAvailable = [];
@@ -383,7 +382,7 @@ connectRabbit().then(() => {
       const projectId = JSON.parse(data.content);
       channel.ack(data);
 
-      const block = await Block.find({ idProject: projectId });
+      const block = await Block.find({ projectId });
 
       const listIdBlock = Array.from(block, ({ _id }) => _id);
 
@@ -561,10 +560,6 @@ const createApartment = async (req, res) => {
     const apartmentIns = req.body;
 
     apartmentIns.createdBy = userId;
-    apartmentIns.floor = {
-      _id: apartmentIns.floorId,
-      name: apartmentIns.floorName,
-    };
 
     // kiểm tra sô lượng căn hộ trong block
     const countApartmentInBlock = await Apartment.countDocuments({ block: apartmentIns.block });
@@ -577,10 +572,7 @@ const createApartment = async (req, res) => {
     }
 
     // kiểm tra căn hộ đã tồn tại hay chưa
-    const apartmentCode = await Apartment.findOne({
-      block: apartmentIns.block,
-      apartmentCode: apartmentIns.apartmentCode,
-    }).select('apartmentCode');
+    const apartmentCode = await Apartment.findOne({ block: apartmentIns.block, apartmentCode: apartmentIns.apartmentCode }).select('apartmentCode');
     if (apartmentCode) {
       return res.status(400).send({
         success: false,
@@ -588,9 +580,9 @@ const createApartment = async (req, res) => {
       });
     }
     const getProjectId = await Block.findById(apartmentIns.block);
-    await channel.sendToQueue('USER-CREATE-APARTMENT-GET', Buffer.from(JSON.stringify({ owner: apartmentIns.owner, projectId: getProjectId.idProject })));
-
-    const apartment = await Apartment.create(req.body);
+    await channel.sendToQueue('USER-CREATE-APARTMENT-GET', Buffer.from(JSON.stringify({ owner: apartmentIns.owner, projectId: getProjectId.projectId })));
+    apartmentIns.project = getProjectId.projectId;
+    const apartment = await Apartment.create(apartmentIns);
     return res.status(200).send({
       success: true,
       data: apartment,
@@ -613,7 +605,7 @@ const listApartment = async (req, res) => {
     const currentPage = parseInt(page || 1);
     const query = {};
 
-    const blockProject = await Block.find({ idProject: projectId }).select('_id name');
+    const blockProject = await Block.find({ projectId }).select('_id name');
     const arrBlock = Array.from(blockProject, ({ _id }) => _id);
     query.block = { $in: arrBlock };
 
@@ -630,7 +622,7 @@ const listApartment = async (req, res) => {
       const blockIdSearch = Array.from(blockSearch, ({ _id }) => _id);
 
       // setup search by type of apartment
-      const typeSearch = await TypeApartment.find({ idProject: projectId, name: { $regex: keywords, $options: 'i' } }).select('_id');
+      const typeSearch = await TypeApartment.find({ projectId, name: { $regex: keywords, $options: 'i' } }).select('_id');
       const typeIdSearch = Array.from(typeSearch, ({ _id }) => _id);
 
       // setup search by owner
@@ -662,7 +654,6 @@ const listApartment = async (req, res) => {
             },
           },
         },
-        { 'floor.name': { $regex: keywords, $options: 'i' } },
         { apartmentCode: { $regex: keywords, $options: 'i' } },
         { block: { $in: blockIdSearch } },
         { typeApartment: { $in: typeIdSearch } },
@@ -670,6 +661,7 @@ const listApartment = async (req, res) => {
         { status: statusSearch },
       ];
     }
+
     const total = await Apartment.countDocuments(query);
     const totalPage = Math.ceil(total / perPage);
 
@@ -722,8 +714,8 @@ const getApartmentById = async (req, res) => {
     const apartment = await Apartment.findById(apartmentId)
       .select('-__v')
       .populate(
-        'typeApartment block',
-        '-__v -numberFloor -numberApartment -quantity -isDeleted -idProject -createdAt -createdBy -updatedAt -updatedBy -floor',
+        'typeApartment block project',
+        '-__v -numberApartment -quantity -isDeleted -projectId -createdAt -createdBy -updatedAt -updatedBy',
       );
 
     // Count the number of residents
@@ -793,7 +785,7 @@ const editApartmentById = async (req, res) => {
       .populate({
         path: 'block',
         populate: {
-          path: 'idProject',
+          path: 'projectId',
           select: 'name thumbnail',
         },
         select: 'name',
@@ -851,7 +843,7 @@ const editApartmentById = async (req, res) => {
       apartmentIns.tenants,
       apartmentIns.memberTenants,
     );
-    const projectId = infoApartment.block.idProject._id;
+    const projectId = infoApartment.block.projectId._id;
     const listPhone = Array.from(listResidents, ({ phone }) => phone);
 
     await channel.sendToQueue('APARTMENT-CREATE-USER', Buffer.from(JSON.stringify({
@@ -893,27 +885,7 @@ const editApartmentById = async (req, res) => {
       return item;
     });
 
-    apartmentIns.floor = {
-      _id: apartmentIns.floorId,
-      name: apartmentIns.floorName,
-    };
     const apartment = await Apartment.findByIdAndUpdate(apartmentId, apartmentIns);
-    return res.status(200).send({
-      success: true,
-      data: apartment,
-    });
-  } catch (error) {
-    return res.status(400).send({
-      success: false,
-      error: error.message,
-    });
-  }
-};
-
-const listApartmentByFloor = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const apartment = await Apartment.find({ 'floor._id': id }).select('apartmentCode');
     return res.status(200).send({
       success: true,
       data: apartment,
@@ -929,20 +901,11 @@ const listApartmentByFloor = async (req, res) => {
 const listApartmentByUserId = async (req, res) => {
   try {
     const userId = req.headers.userid;
-    const apartment = await Apartment.find(
-      {
-        $or: [
-          { owner: { $in: userId } },
-          { relativeOwners: { $in: userId } },
-          { tenants: { $in: userId } },
-          { memberTenants: { $in: userId } },
-        ],
-      },
-    )
+    const apartment = await Apartment.find({ owner: userId })
       .populate({
-        path: 'block',
+        path: 'block typeApartment',
         populate: {
-          path: 'idProject',
+          path: 'projectId',
           select: 'name thumbnail',
         },
         select: 'name',
@@ -950,10 +913,14 @@ const listApartmentByUserId = async (req, res) => {
       .select('apartmentCode typeApartment blockName project');
     apartment.map((item) => {
       const element = item;
-      element._doc.project = element.block.idProject;
+      element._doc.project = element.block.projectId;
       element._doc.block = {
         _id: element.block._id,
         name: element.block.name,
+      };
+      element._doc.typeApartment = {
+        _id: element.typeApartment._id,
+        name: element.typeApartment.name,
       };
       return item;
     });
@@ -977,7 +944,7 @@ const userGetApartmentById = async (req, res) => {
       .populate({
         path: 'block',
         populate: {
-          path: 'idProject',
+          path: 'projectId',
           select: 'name -_id description',
         },
         select: 'name -_id',
@@ -989,9 +956,9 @@ const userGetApartmentById = async (req, res) => {
     if (apartment) {
       /* eslint-disable*/
       apartment._doc.blockName = apartment.block.name;
-      apartment._doc.projectName = apartment.block.idProject.name;
-      apartment._doc.projectDescription = apartment.block.idProject.description;
-      apartment._doc.thumbnailPath = apartment.block.idProject.thumbnailPath;
+      apartment._doc.projectName = apartment.block.projectId.name;
+      apartment._doc.projectDescription = apartment.block.projectId.description;
+      apartment._doc.thumbnailPath = apartment.block.projectId.thumbnailPath;
       apartment._doc.typeApartment = apartment.typeApartment.name;
       delete apartment._doc.block;
       /* eslint-disable*/
@@ -1050,7 +1017,7 @@ const listResidentInApartment= async(req,res)=>{
     listResidentId.map(item=>{
       const listResident={
         _id: dataUser[item]._id,
-        name: dataUser[item].fullName,
+        name: dataUser[item].name,
         phone: dataUser[item].phone,
         role: item == apartment.owner? 'Chủ sở hữu':
          apartment.relativeOwners.includes(item)?'Người thân chủ sở hữu' :
@@ -1075,7 +1042,6 @@ module.exports = {
   listApartment,
   getApartmentById,
   editApartmentById,
-  listApartmentByFloor,
   listApartmentByUserId,
   userGetApartmentById,
   getApartmentByBlock,

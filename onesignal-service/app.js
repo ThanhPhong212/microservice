@@ -40,8 +40,9 @@ app.listen(config.server.port, (err) => {
   );
 });
 
-// var CustomNotification = require('./lib/onesignal');
-// const customNotification = new CustomNotification(['Subscribed Users'], { en: 'nội dung test nè' }, ['3437d5f3-d431-4a8e-980d-73991c28440e']);
+// const CustomNotification = require('./lib/onesignal');
+
+// const customNotification = new CustomNotification({ includePlayerIds: ['f83c2e75-583c-46c1-ad9a-2d9df8ef7ff5'], contents: { en: 'nội dung test nè' } });
 // customNotification.create();
 
 module.exports = app;

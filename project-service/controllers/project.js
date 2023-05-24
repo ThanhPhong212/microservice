@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable no-param-reassign */
 /* eslint-disable consistent-return */
 /* eslint-disable no-underscore-dangle */
@@ -22,6 +23,8 @@ const connectRabbit = async () => {
   await channel.assertQueue('PROJECT-SEND-REQUEST');
   await channel.assertQueue('PROJECT-SERVICE-INFO');
   await channel.assertQueue('PROJECT-BASEMENT-INFO');
+  await channel.assertQueue('LIST-PROJECT-USER-INFO');
+  await channel.assertQueue('PROJECT-MANAGE-INFO');
 };
 connectRabbit().then(() => {
   channel.consume('FILE-PROJECT', async (data) => {
@@ -42,7 +45,7 @@ connectRabbit().then(() => {
         .populate({
           path: 'block',
           populate: {
-            path: 'idProject',
+            path: 'projectId',
             select: 'name _id',
           },
           select: 'name _id',
@@ -59,7 +62,6 @@ connectRabbit().then(() => {
     try {
       const obj = {};
       obj.block = {};
-      obj.floor = {};
       obj.userId = [];
       obj.apartment = {};
       const arrayApartment = [];
@@ -68,7 +70,7 @@ connectRabbit().then(() => {
           .select('block')
           .populate({
             path: 'block',
-            select: 'name _id floor',
+            select: 'name _id',
           });
         const blockJson = {};
         // eslint-disable-next-line array-callback-return
@@ -78,18 +80,8 @@ connectRabbit().then(() => {
           if (!item.toBlock) {
             return element;
           }
-          if (!item.toFloor) {
-            // data json key block id - value: detail block
-            obj.block[element.toBlock] = blockJson[element.toBlock].name;
-            return element;
-          }
           if (!item.toApartment) {
-            const floorJson = {};
-            // data json key floor id - value: detail floor
             obj.block[element.toBlock] = blockJson[element.toBlock].name;
-            // eslint-disable-next-line array-callback-return
-            blockJson[element.toBlock].floor.map((value) => { floorJson[value._id] = value; });
-            obj.floor[element.toFloor] = floorJson[element.toFloor].name;
             return element;
           }
           if (!arrayApartment.includes(element.toApartment)) {
@@ -121,7 +113,7 @@ connectRabbit().then(() => {
       const { keywords, projectId } = dtum;
 
       // search block theo keywords
-      const block = await Block.find({ name: { $regex: keywords, $options: 'i' }, idProject: projectId });
+      const block = await Block.find({ name: { $regex: keywords, $options: 'i' }, projectId });
       const arrayBlockId = Array.from(block, ({ _id }) => _id);
 
       // search căn hộ theo keywords
@@ -154,18 +146,40 @@ connectRabbit().then(() => {
 exports.listProject = async (req, res) => {
   try {
     const { keywords } = req.query;
-    const query = Project.find().sort({ name: 1 });
-    query.populate('block', '-__v');
-    query.populate('typeApartment', '-__v');
-    if (keywords) {
-      query.regex('name', new RegExp(keywords, 'i'));
-    }
-    query.select('-__v');
-    const data = await query.exec();
-    data.forEach((element, index) => {
-      const sum = element.block.reduce((accumulator, obj) => accumulator + obj.numberApartment, 0);
-      data[index]._doc.numberApartment = sum;
+    const { userid, role } = req.headers;
+
+    const query = {};
+    if (keywords) { query.name = { $regex: keywords, $options: 'i' }; }
+
+    await channel.sendToQueue('LIST-PROJECT-USER-GET', Buffer.from(JSON.stringify(userid)));
+    await channel.consume('LIST-PROJECT-USER-INFO', (info) => {
+      const listId = JSON.parse(info.content);
+      channel.ack(info);
+      eventEmitter.emit('getListProjectDone', listId);
     });
+    setTimeout(() => eventEmitter.emit('getListProjectDone'), 10000);
+    const listProjectId = await new Promise((resolve) => { eventEmitter.once('getListProjectDone', resolve); });
+    if (listProjectId.length) {
+      query._id = { $in: listProjectId };
+    } else if (role !== 'ADMIN_SPS') {
+      return res.status(200).send({
+        success: true,
+        data: [],
+      });
+    }
+
+    const data = await Project.find(query)
+      .sort({ name: 1 })
+      .populate('block typeApartment', '-__v')
+      .select('-__v');
+
+    if (data.length) {
+      data.forEach((element, index) => {
+        const sum = element.block.reduce((accumulator, obj) => accumulator + obj.numberApartment, 0);
+        data[index]._doc.numberApartment = sum;
+      });
+    }
+
     return res.status(200).send({
       success: true,
       data,
@@ -181,15 +195,19 @@ exports.listProject = async (req, res) => {
 exports.createProject = async (req, res) => {
   try {
     const projectIns = req.body;
-    const userId = req.headers.userid;
-    projectIns.createdBy = userId;
-    projectIns.updatedBy = userId;
+    const { role, userid } = req.headers;
+    projectIns.createdBy = userid;
+    projectIns.updatedBy = userid;
+
     await Project.create(projectIns, (error, prj) => {
       if (error) {
         return res.status(400).send({
           success: false,
           error: error.message,
         });
+      }
+      if (projectIns.managerCompany) {
+        channel.sendToQueue('USER-ADD-PROJECT', Buffer.from(JSON.stringify({ managerCompanyId: projectIns.managerCompany, projectId: prj._id, role })));
       }
       return res.status(200).send({
         success: true,
@@ -208,8 +226,7 @@ exports.getProjectById = async (req, res) => {
   try {
     const { id } = req.params;
     const data = await Project.findById(id, '-createdAt -createdBy -updatedAt -updatedBy -__v')
-      .populate('block', '-createdAt -createdBy -updatedAt -updatedBy -__v')
-      .populate('typeApartment', '-createdAt -createdBy -updatedAt -updatedBy -__v').exec();
+      .populate('block typeApartment', '-createdAt -createdBy -updatedAt -updatedBy -__v');
     data._doc.numberOfBlock = data.block.length;
     data._doc.numberOfTypeApartment = data.typeApartment.length;
 
@@ -234,6 +251,16 @@ exports.getProjectById = async (req, res) => {
     setTimeout(() => eventEmitter.emit('sumBasement'), 10000);
     const basement = await new Promise((resolve) => { eventEmitter.once('sumBasement', resolve); });
     data._doc.basement = basement;
+
+    await channel.sendToQueue('PROJECT-MANAGE-GET', Buffer.from(JSON.stringify(data._id)));
+    await channel.consume('PROJECT-MANAGE-INFO', (info) => {
+      const dataManage = JSON.parse(info.content);
+      channel.ack(info);
+      eventEmitter.emit('manageDone', dataManage);
+    });
+    setTimeout(() => eventEmitter.emit('manageDone'), 10000);
+    const manage = await new Promise((resolve) => { eventEmitter.once('manageDone', resolve); });
+    data._doc.company = manage;
 
     return res.status(200).send({
       success: true,

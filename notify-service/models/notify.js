@@ -27,9 +27,6 @@ const notifySchema = new Schema({
   toBlock: {
     type: Schema.Types.ObjectId,
   },
-  toFloor: {
-    type: Schema.Types.ObjectId,
-  },
   toApartment: {
     type: Schema.Types.ObjectId,
   },
@@ -62,7 +59,7 @@ const notifySchema = new Schema({
 
 notifySchema.virtual('notifyFilePath').get(function () {
   if (!this.file) { return null; }
-  return `${process.env.AVATAR_URL}notify/${this.id}/${this.file}`;
+  return `${process.env.IMAGE_URL}notify/${this.id}/${this.file}`;
 });
 
 notifySchema.pre('save', function (next) {

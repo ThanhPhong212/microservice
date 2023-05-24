@@ -17,6 +17,7 @@ const connectRabbit = async () => {
   await channel.assertQueue('NOTIFY-PROJECT');
   await channel.assertQueue('NOTIFY-LIST-PROJECT');
   await channel.assertQueue('CKEDITOR-NOTIFY');
+  await channel.assertQueue('NOTIFY-DETAIL-USER-INFO');
 };
 connectRabbit().then(() => {
   channel.consume('CKEDITOR-NOTIFY', async (data) => {
@@ -97,9 +98,9 @@ exports.updateNotify = async (req, res) => {
 
 const consumeData = async (dataQuery) => {
   const arrayProejctInfo = Array.from(dataQuery, ({
-    toProject, toBlock, toFloor, toApartment,
+    toProject, toBlock, toApartment,
   }) => ({
-    toProject, toBlock, toFloor, toApartment,
+    toProject, toBlock, toApartment,
   }));
   await channel.sendToQueue('PROJECT-LIST', Buffer.from(JSON.stringify(arrayProejctInfo)));
   await channel.consume('NOTIFY-LIST-PROJECT', async (message) => {
@@ -139,11 +140,11 @@ exports.getNotifyById = async (req, res) => {
       if (!data.toBlock) {
         data._doc.sendTo = 'Tất cả cư dân';
       }
-      if (data.toBlock && !data.toFloor) {
+      if (data.toBlock) {
         data._doc.sendTo = projectInfo.block[data.toBlock];
       }
-      if (data.toBlock && data.toFloor && !data.toApartment) {
-        data._doc.sendTo = `${projectInfo.block[data.toBlock]}-${projectInfo.floor[data.toFloor]}`;
+      if (data.toBlock && !data.toApartment) {
+        data._doc.sendTo = `${projectInfo.block[data.toBlock]}`;
       }
       if (data.toApartment) {
         const userId = projectInfo.apartment[data.toApartment];
@@ -151,7 +152,6 @@ exports.getNotifyById = async (req, res) => {
       }
       delete data._doc.toBlock;
       delete data._doc.toApartment;
-      delete data._doc.toFloor;
     }
     return res.status(200).send({
       success: true,
@@ -186,7 +186,7 @@ exports.listNotify = async (req, res) => {
       const { projectInfo, dataConsume } = result;
       dataQuery.map((item) => {
         const element = item;
-        if (!element.createdBy?.fullName) {
+        if (!element.createdBy?.name) {
           if (!dataConsume) {
             element._doc.createdBy = '';
           }
@@ -195,11 +195,11 @@ exports.listNotify = async (req, res) => {
         if (!element.toBlock) {
           element._doc.sendTo = 'Tất cả cư dân';
         }
-        if (element.toBlock && !element.toFloor) {
+        if (element.toBlock) {
           element._doc.sendTo = projectInfo.block[element.toBlock];
         }
-        if (element.toBlock && element.toFloor && !element.toApartment) {
-          element._doc.sendTo = `${projectInfo.block[element.toBlock]}-${projectInfo.floor[element.toFloor]}`;
+        if (element.toBlock && !element.toApartment) {
+          element._doc.sendTo = `${projectInfo.block[element.toBlock]}`;
         }
         if (element.toApartment) {
           const userId = projectInfo.apartment[element.toApartment];
@@ -207,7 +207,6 @@ exports.listNotify = async (req, res) => {
         }
         delete element._doc.toBlock;
         delete element._doc.toApartment;
-        delete element._doc.toFloor;
         return item;
       });
     }
@@ -247,16 +246,14 @@ exports.listNotifyByUser = async (req, res) => {
     // eslint-disable-next-line no-promise-executor-return
     const dataConsume = await new Promise((resolve) => eventEmitter.once('consumeNotify', resolve));
     let arrayBlock = Array.from(dataConsume, ({ block }) => block._id);
-    let arrayFloor = Array.from(dataConsume, ({ floor }) => floor._id);
     let arrayApartment = Array.from(dataConsume, ({ _id }) => _id);
     arrayBlock = [...new Set(arrayBlock)];
-    arrayFloor = [...new Set(arrayFloor)];
     arrayApartment = [...new Set(arrayApartment)];
     const query = {};
     query.$or = [
       {
         $and: [
-          { toProject: projectId }, { toBlock: null }, { toFloor: null }, { toApartment: null },
+          { toProject: projectId }, { toBlock: null }, { toApartment: null },
         ],
       },
     ];
@@ -265,26 +262,15 @@ exports.listNotifyByUser = async (req, res) => {
         $and: [
           { toProject: projectId },
           { toBlock: { $in: arrayBlock } },
-          { toFloor: null },
           { toApartment: null },
         ],
       });
     }
-    if (arrayFloor.length > 0) {
-      query.$or.push({
-        $and: [
-          { toProject: projectId },
-          { toBlock: { $in: arrayBlock } },
-          { toFloor: { $in: arrayFloor } },
-          { toApartment: null },
-        ],
-      });
-    }
+
     if (arrayApartment.length > 0) {
       query.$or.push({
         toProject: projectId,
         toBlock: { $in: arrayBlock },
-        toFloor: { $in: arrayFloor },
         toApartment: { $in: arrayApartment },
       });
     }
@@ -304,20 +290,9 @@ exports.listNotifyByUser = async (req, res) => {
       // format data res
       delete element._doc.toProject;
       delete element._doc.toBlock;
-      delete element._doc.toFloor;
       delete element._doc.toApartment;
       if (!item.toBlock) {
         return element;
-      }
-      if (!item.toFloor) {
-        if (arrayBlock.includes(String(item.toBlock))) {
-          return element;
-        }
-      }
-      if (!item.toApartment) {
-        if (arrayFloor.includes(String(item.toFloor))) {
-          return element;
-        }
       }
       if (item.toApartment) {
         if (arrayApartment.includes(String(item.toApartment))) {
@@ -340,7 +315,22 @@ exports.listNotifyByUser = async (req, res) => {
 exports.userGetNotifyById = async (req, res) => {
   try {
     const { notifyId } = req.params;
-    const data = await Notify.findById(notifyId).select('-__v -updatedAt -updatedBy -toProject -toBlock -toFloor -toApartment');
+    const data = await Notify.findById(notifyId).select('-__v -updatedAt -updatedBy -toProject -toBlock -toApartment');
+
+    if (data) {
+      await channel.sendToQueue('NOTIFY-DETAIL-USER-GET', Buffer.from(JSON.stringify(data.createdBy)));
+      await channel.consume('NOTIFY-DETAIL-USER-INFO', (search) => {
+        const dataUser = JSON.parse(search.content);
+        channel.ack(search);
+        eventEmitter.emit('consumeDone', dataUser);
+      });
+      setTimeout(() => eventEmitter.emit('consumeDone'), 10000);
+      const userData = await new Promise((resolve) => { eventEmitter.once('consumeDone', resolve); });
+      if (userData) {
+        data._doc.createdBy = userData;
+      }
+    }
+
     return res.status(200).send({
       success: true,
       data,
