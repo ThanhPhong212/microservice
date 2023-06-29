@@ -41,15 +41,7 @@ connectRabbit().then(() => {
     const dtum = JSON.parse(data.content);
     channel.ack(data);
     try {
-      const apartment = await Apartment.find({ owner: dtum.userId }, '-__v -owner -tenant -member -status')
-        .populate({
-          path: 'block',
-          populate: {
-            path: 'projectId',
-            select: 'name _id',
-          },
-          select: 'name _id',
-        }).lean();
+      const apartment = await Apartment.find({ owner: dtum.userId }, '-__v -owner -tenant -member -status');
       await channel.sendToQueue('NOTIFY-PROJECT', Buffer.from(JSON.stringify(apartment)));
     } catch (error) {
       await channel.sendToQueue('NOTIFY-PROJECT', Buffer.from(JSON.stringify(null)));
@@ -57,50 +49,32 @@ connectRabbit().then(() => {
   });
 
   channel.consume('PROJECT-LIST', async (data) => {
-    const dtum = JSON.parse(data.content);
+    const { listBlockId, listApartmentId } = JSON.parse(data.content);
     channel.ack(data);
     try {
-      const obj = {};
-      obj.block = {};
-      obj.userId = [];
-      obj.apartment = {};
-      const arrayApartment = [];
-      if (dtum.length > 0) {
-        const project = await Project.findOne({ _id: dtum[0].toProject })
-          .select('block')
-          .populate({
-            path: 'block',
-            select: 'name _id',
-          });
-        const blockJson = {};
-        // eslint-disable-next-line array-callback-return
-        project.block.map((item) => { blockJson[item._id] = item; });
-        await Promise.all(dtum.map(async (item) => {
-          const element = item;
-          if (!item.toBlock) {
-            return element;
-          }
-          if (!item.toApartment) {
-            obj.block[element.toBlock] = blockJson[element.toBlock].name;
-            return element;
-          }
-          if (!arrayApartment.includes(element.toApartment)) {
-            arrayApartment.push(element.toApartment);
-            return element;
-          }
-          return element;
-        }));
-        const apartment = await Apartment.find({ _id: { $in: arrayApartment } }).select('id owner');
-        await Promise.all(apartment.map(async (item) => {
-          const element = item;
-          if (element.owner) {
-            obj.userId.push(element.owner);
-          }
-          obj.apartment[element.id] = element.owner;
-          return element;
-        }));
-        await channel.sendToQueue('NOTIFY-LIST-PROJECT', Buffer.from(JSON.stringify(obj)));
+      const convertArrayToObjectKey = (dataConvert) => {
+        const info = dataConvert.reduce((acc, cur) => {
+          const id = cur._id;
+          return { ...acc, [id]: cur };
+        }, {});
+        return info;
+      };
+
+      let dataBlock = null;
+      let dataApartment = null;
+      if (listBlockId.length) {
+        const block = await Block.find({ _id: { $in: listBlockId } });
+        if (block.length) {
+          dataBlock = convertArrayToObjectKey(block);
+        }
       }
+      if (listApartmentId.length) {
+        const apartment = await Apartment.find({ _id: { $in: listApartmentId } });
+        if (apartment.length) {
+          dataApartment = convertArrayToObjectKey(apartment);
+        }
+      }
+      await channel.sendToQueue('NOTIFY-LIST-PROJECT', Buffer.from(JSON.stringify({ dataBlock, dataApartment })));
     } catch (error) {
       logger.error(error.message);
       await channel.sendToQueue('NOTIFY-LIST-PROJECT', Buffer.from(JSON.stringify(null)));

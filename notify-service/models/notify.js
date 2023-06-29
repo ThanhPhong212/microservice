@@ -17,8 +17,8 @@ const notifySchema = new Schema({
   },
   type: {
     type: String,
-    enum: ['NOTIFY'],
-    default: 'NOTIFY',
+    enum: ['HOUSE_ROOF', 'CASHBACK', 'PPA', 'TASK'],
+    default: 'HOUSE_ROOF',
   },
   toProject: {
     type: Schema.Types.ObjectId,
@@ -30,23 +30,29 @@ const notifySchema = new Schema({
   toApartment: {
     type: Schema.Types.ObjectId,
   },
+  toUser: String,
   schedule: {
     type: Date,
+  },
+  seen: { type: Boolean, default: false },
+  listSeen: [{ type: String }],
+  url: { type: String, default: null },
+  typeNotify: {
+    type: String,
+    enum: ['MANAGEMENT', 'SYSTEM'],
+    default: 'SYSTEM',
   },
   createdAt: {
     type: String,
   },
   createdBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
-  },
-  updatedAt: {
     type: String,
-    default: new Date().valueOf(),
+    default: 'System',
   },
+  updatedAt: String,
   updatedBy: {
-    type: Schema.Types.ObjectId,
-    default: null,
+    type: String,
+    default: 'System',
   },
   file: {
     type: String,

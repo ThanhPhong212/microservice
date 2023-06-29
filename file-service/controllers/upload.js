@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /* eslint-disable array-callback-return */
 /* eslint-disable no-console */
 /* eslint-disable consistent-return */
@@ -28,6 +29,7 @@ const connectRabbit = async () => {
   await channel.assertQueue('ORDER-EXPORT-GET');
   await channel.assertQueue('RECEIPT-EXPORT-GET');
   await channel.assertQueue('FILE-CATEGORY-CHANGE');
+  await channel.assertQueue('FILE-EVENT-CHANGE');
 };
 
 const convertExcelToJson = async (data) => {
@@ -124,6 +126,10 @@ connectRabbit().then(() => {
         if (value === 'request') {
           path = `request/${dtum.id}`;
           type = 'REQUEST';
+        }
+        if (value === 'event') {
+          path = `event/${dtum.id}`;
+          type = 'EVENT';
         }
         if (value === 'residentialCard') {
           path = `residentialCard/${dtum.id}`;
@@ -263,6 +269,25 @@ connectRabbit().then(() => {
       const path = `service/${dtum.id}`;
       handleSaveFile({
         type: 'SERVICE',
+        path,
+        newFile: dtum.fileSave.newFile,
+        oldFile: dtum.fileSave.oldFile,
+        dtum,
+      });
+      return true;
+    } catch (error) {
+      logger.error(error.message);
+      return false;
+    }
+  });
+
+  channel.consume('FILE-EVENT-CHANGE', async (data) => {
+    try {
+      const dtum = JSON.parse(data.content);
+      channel.ack(data);
+      const path = `event/${dtum.id}`;
+      handleSaveFile({
+        type: 'EVENT',
         path,
         newFile: dtum.fileSave.newFile,
         oldFile: dtum.fileSave.oldFile,
@@ -436,6 +461,27 @@ const uploadImage = async (req, res) => {
       });
     }
     const { file } = req.files;
+
+    // nếu là nhiều file
+    if (Array.isArray(file)) {
+      const listFile = [];
+      await Promise.all(file.map(async (item) => {
+        const date = new Date();
+        item.name = `${item.md5}-${date.valueOf()}.${item.name.split('.').pop()}`;
+        const path = __dirname.replace('controllers', `tmp/${item.name}`);
+        await item.mv(path, (err) => {
+          if (err) { throw err; }
+        });
+
+        listFile.push({ fileName: item.name, fullPath: `${process.env.IMAGE_URL}/${item.name}` });
+      }));
+      return res.status(200).send({
+        success: true,
+        data: listFile,
+      });
+    }
+
+    // nếu chỉ có 1 file
     const date = new Date();
     file.name = `${file.md5}-${date.valueOf()}.${file.name.split('.').pop()}`;
     const path = __dirname.replace('controllers', `tmp/${file.name}`);
@@ -623,10 +669,65 @@ const uploadFileEditor = async (req, res) => {
   }
 };
 
+const uploadImagePPA = async (req, res) => {
+  try {
+    if (!req.files) {
+      return res.status(404).send({
+        success: false,
+        error: 'file not exist',
+      });
+    }
+    const { file } = req.files;
+    const { repairId } = req.params;
+    // nếu là nhiều file
+    if (Array.isArray(file)) {
+      const listFile = [];
+      await Promise.all(file.map(async (item) => {
+        const date = new Date();
+        item.name = `${item.md5}-${date.valueOf()}.${item.name.split('.').pop()}`;
+        const path = __dirname.replace('controllers', `public/repair/${repairId}/${item.name}`);
+        await item.mv(path, (err) => {
+          if (err) { throw err; }
+        });
+
+        listFile.push({ fileName: item.name, fullPath: `${process.env.IMAGE_URL}/repair/${repairId}/${item.name}` });
+      }));
+      return res.status(200).send({
+        success: true,
+        data: listFile,
+      });
+    }
+
+    // nếu chỉ có 1 file
+    const date = new Date();
+    file.name = `${file.md5}-${date.valueOf()}.${file.name.split('.').pop()}`;
+    const path = __dirname.replace('controllers', `public/repair/${repairId}/${file.name}`);
+    // eslint-disable-next-line consistent-return
+    await file.mv(path, async (err) => {
+      if (err) {
+        return res.status(400).send({
+          success: false,
+          error: err.message,
+        });
+      }
+      return res.status(200).send({
+        success: true,
+        data: { fileName: file.name, fullPath: `${process.env.IMAGE_URL}/repair/${repairId}/${file.name}` },
+      });
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   uploadImage,
   uploadProject,
   uploadVideo,
   uploadFile,
   uploadFileEditor,
+  uploadImagePPA,
 };

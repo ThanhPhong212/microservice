@@ -41,7 +41,9 @@ exports.authenticate = async (req, res, next) => {
     }
     const bearerToken = token.split(' ')[1];
     const verify = jwt.verify(bearerToken, process.env.SECRET_KEY);
-    const data = { userId: verify._id, role: verify.role };
+    const data = {
+      userId: verify._id, role: verify.role, name: verify.name, phone: verify.phone,
+    };
     const auth = await Auth.findOne({ userId: verify._id });
     if (!auth) {
       return res.status(401).send({
@@ -73,8 +75,12 @@ exports.createRefreshToken = async (req, res) => {
       });
     }
     const verify = jwt.verify(refreshToken, process.env.SECRET_REFRESH_KEY);
-    const { _id, name, role } = verify;
-    const token = jwt.sign({ _id, name, role }, process.env.SECRET_KEY, {
+    const {
+      _id, name, role, phone,
+    } = verify;
+    const token = jwt.sign({
+      _id, name, role, phone,
+    }, process.env.SECRET_KEY, {
       expiresIn: process.env.JWT_EXPIRE,
     });
     const userAuth = await Auth.findOne({ userId: _id });

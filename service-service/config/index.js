@@ -13,6 +13,7 @@ module.exports = {
   logger: {
     file_name: process.env.environment,
   },
+  url: process.env.url_notify,
   utcDay: {
     1: 'monday',
     2: 'tuesday',

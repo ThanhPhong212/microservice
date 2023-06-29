@@ -10,7 +10,7 @@ const fileSchema = new Schema({
   },
   type: {
     type: String,
-    enum: ['AVATAR', 'CARD', 'PROJECT', 'NOTIFY', 'SERVICE', 'REQUEST', 'CKEDITOR', 'LIBRARY', 'DEVICE', 'RESIDENTIAL_CARD'],
+    enum: ['AVATAR', 'CARD', 'PROJECT', 'NOTIFY', 'SERVICE', 'REQUEST', 'CKEDITOR', 'LIBRARY', 'DEVICE', 'RESIDENTIAL_CARD', 'EVENT'],
   },
 });
 

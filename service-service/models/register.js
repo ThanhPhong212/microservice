@@ -8,6 +8,7 @@ const registerSchema = new Schema({
     type: Schema.Types.ObjectId,
     require: true,
   },
+  otherContact: String,
   userId: {
     type: Schema.Types.ObjectId,
     require: true,

@@ -2,10 +2,9 @@
 const OneSignal = require('onesignal-node');
 
 const config = require('../config/index');
-const logger = require('../utils/logger/index');
+const logger = require('../utils/logger');
 
 const client = new OneSignal.Client(config.onesignal.id, config.onesignal.key);
-
 class CustomNotification {
   constructor({
     includedSegments, contents, includePlayerIds, filters, web_url,

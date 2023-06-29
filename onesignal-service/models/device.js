@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const device = new Schema({
-  deviceId: { type: String, require: false },
+  deviceId: { type: String, require: false }, // HOUSE_ROOF CASHBACK
   playerId: { type: String, require: false },
-  userId: { type: Schema.Types.ObjectId, require: false },
+  userId: { type: String, require: false },
   type: {
     type: String,
     enum: ['WEB', 'APP'],

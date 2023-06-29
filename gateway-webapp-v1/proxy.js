@@ -21,6 +21,7 @@ const setupProxies = (app, routes) => {
           if (response && response.data?.success) {
             req.headers.userId = response.data.data.userId;
             req.headers.role = response.data.data.role;
+            req.headers.phone = response.data.data.phone;
             return next();
           }
           return res.status(401).send({
@@ -28,12 +29,6 @@ const setupProxies = (app, routes) => {
             error: 'Authenticate fail!',
           });
         } catch (error) {
-          if (error.response.status === 401) {
-            return res.status(401).send({
-              success: false,
-              error: error.response.data.error,
-            });
-          }
           return res.status(400).send({
             success: false,
             error: 'Authenticate fail!',

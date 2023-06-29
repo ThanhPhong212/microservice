@@ -13,6 +13,7 @@ const Role = require('../models/role');
 const Otp = require('../models/otp');
 const logger = require('../utils/logger');
 const connect = require('../lib/rabbitMQ');
+const Demo = require('../models/demo');
 
 let channel;
 const connectRabbit = async () => {
@@ -70,7 +71,6 @@ const connectRabbit = async () => {
   await channel.assertQueue('USER-CATEGORY-INFO');
   await channel.assertQueue('USER-CATEGORY-DETAIL-INFO');
   await channel.assertQueue('CASHBACK-MOBILE-CATEGORY-USER-GET');
-  await channel.assertQueue('CASHBACK-MOBILE-CATEGORY-DETAIL-USER-INFO');
   await channel.assertQueue('CASHBACK-MOBILE-CATEGORY-DETAIL-USER-GET');
   await channel.assertQueue('CHECK-API-KEY-GET');
   await channel.assertQueue('USER-WALLET-INFO');
@@ -80,11 +80,15 @@ const connectRabbit = async () => {
   await channel.assertQueue('RESIDENT-CARD-CREATE-USER');
   await channel.assertQueue('RESIDENT-CARD-USER-GET');
   await channel.assertQueue('NOTIFY-DETAIL-USER-GET');
+  await channel.assertQueue('EVENT-USER-GET');
+  await channel.assertQueue('EVENT-CREATEDBY-GET');
+  await channel.assertQueue('EVENT-CREATEDBY-DETAIL-GET');
+  await channel.assertQueue('EVENT-USER-DETAIL-GET');
 };
 
 const getJsonUser = async (arrayUserId) => {
   try {
-    const user = await User.find({ _id: { $in: arrayUserId } }, 'id phone name').lean();
+    const user = await User.find({ _id: { $in: arrayUserId } }, '-password').lean();
     const jsonData = {};
     user.forEach((element) => {
       jsonData[element._id] = element;
@@ -171,6 +175,56 @@ const convertArrayObjIdToArrayString = (data) => {
 };
 
 connectRabbit().then(() => {
+  channel.consume('EVENT-USER-DETAIL-GET', async (data) => {
+    try {
+      const userId = JSON.parse(data.content);
+      channel.ack(data);
+      const user = await User.findById(userId).select('-__v -password');
+      channel.sendToQueue('EVENT-USER-DETAIL-INFO', Buffer.from(JSON.stringify(user)));
+    } catch (error) {
+      channel.sendToQueue('EVENT-USER-DETAIL-INFO', Buffer.from(JSON.stringify(null)));
+    }
+  });
+
+  channel.consume('EVENT-CREATEDBY-DETAIL-GET', async (data) => {
+    try {
+      const userId = JSON.parse(data.content);
+      channel.ack(data);
+      const user = await User.findById(userId).select('-__v -password');
+      channel.sendToQueue('EVENT-CREATEDBY-DETAIL-INFO', Buffer.from(JSON.stringify(user)));
+    } catch (error) {
+      channel.sendToQueue('EVENT-CREATEDBY-DETAIL-INFO', Buffer.from(JSON.stringify(null)));
+    }
+  });
+
+  channel.consume('EVENT-CREATEDBY-GET', async (data) => {
+    try {
+      const listId = JSON.parse(data.content);
+      channel.ack(data);
+      let user = await User.find({ _id: { $in: listId } }).select('-__v -password');
+      if (user.length > 0) {
+        user = user.reduce((acc, cur) => {
+          const id = cur._id;
+          return { ...acc, [id]: cur };
+        }, {});
+      }
+      channel.sendToQueue('EVENT-CREATEDBY-INFO', Buffer.from(JSON.stringify(user)));
+    } catch (error) {
+      channel.sendToQueue('EVENT-CREATEDBY-INFO', Buffer.from(JSON.stringify(null)));
+    }
+  });
+
+  channel.consume('EVENT-USER-GET', async (data) => {
+    try {
+      const listId = JSON.parse(data.content);
+      channel.ack(data);
+      const user = await User.find({ _id: { $in: listId } }).select('avatar name phone');
+      channel.sendToQueue('EVENT-USER-INFO', Buffer.from(JSON.stringify(user)));
+    } catch (error) {
+      channel.sendToQueue('EVENT-USER-INFO', Buffer.from(JSON.stringify(null)));
+    }
+  });
+
   channel.consume('NOTIFY-DETAIL-USER-GET', async (data) => {
     try {
       const userId = JSON.parse(data.content);
@@ -876,8 +930,7 @@ connectRabbit().then(() => {
 
       channel.sendToQueue('USER-DETAILS-INFO', Buffer.from(JSON.stringify(user)));
     } catch (error) {
-      const dataAvailable = {};
-      channel.sendToQueue('USER-DETAILS-INFO', Buffer.from(JSON.stringify(dataAvailable)));
+      channel.sendToQueue('USER-DETAILS-INFO', Buffer.from(JSON.stringify(null)));
     }
     channel.ack(data);
   });
@@ -942,9 +995,9 @@ connectRabbit().then(() => {
   });
 
   channel.consume('USER-LIST', async (data) => {
-    const dtum = JSON.parse(data.content);
+    const listId = JSON.parse(data.content);
     try {
-      const user = await getJsonUser(dtum);
+      const user = await getJsonUser(listId);
       channel.sendToQueue('USER-NOTIFY', Buffer.from(JSON.stringify(user)));
     } catch (error) {
       channel.sendToQueue('USER-NOTIFY', Buffer.from(JSON.stringify(null)));
@@ -1122,14 +1175,18 @@ const login = async (req, res) => {
       });
     }
     const token = jwt.sign(
-      { _id: user._id, name: user.name, role: user.role.value },
+      {
+        _id: user._id, name: user.name, role: user.role.value, phone: user.phone,
+      },
       process.env.SECRET_KEY,
       {
         expiresIn: process.env.JWT_EXPIRE,
       },
     );
     const refreshToken = jwt.sign(
-      { _id: user._id, name: user.name, role: user.role.value },
+      {
+        _id: user._id, name: user.name, role: user.role.value, phone: user.phone,
+      },
       process.env.SECRET_REFRESH_KEY,
       { expiresIn: process.env.JWT_REFRESH_EXPIRE },
     );
@@ -1156,7 +1213,7 @@ const listUser = async (req, res) => {
       limit, page, keywords, role, parent, projectId,
     } = req.query;
 
-    const perPage = parseInt(limit || 20);
+    const perPage = parseInt(limit || 10);
     const currentPage = parseInt(page || 1);
 
     const query = { isDeleted: false };
@@ -1263,7 +1320,7 @@ const infoUser = async (req, res) => {
       const apartmentData = await new Promise((resolve) => { eventEmitter.once('consumeDone', resolve); });
       user._doc.listApartment = [];
 
-      if (apartmentData.length) {
+      if (apartmentData && apartmentData.length) {
         apartmentData.map((item) => {
           const apartment = {};
           apartment.name = item.apartmentCode;
@@ -1327,6 +1384,7 @@ const createUser = async (req, res) => {
     if (body.birthday) { body.birthday = new Date(body.birthday).valueOf(); }
     if (body.dateOfIssue) { body.dateOfIssue = new Date(body.dateOfIssue).valueOf(); }
     if (projectId) { body.projects = [projectId]; }
+    if (!body.username) { body.username = body.phone; }
 
     // lấy role
     const roleUser = body.role;
@@ -1352,6 +1410,7 @@ const createUser = async (req, res) => {
       ],
     };
     if (body.numberIdentify) { query.$or.push({ numberIdentify: body.numberIdentify }); }
+    if (body.ref) { query.$or.push({ ref: body.ref }); }
 
     const user = await User.findOne(query);
 
@@ -1381,25 +1440,31 @@ const createUser = async (req, res) => {
       }
 
       if (roleUser === 'CUSTOMER') {
-        if (user.projects.includes(projectId)) {
-          return res.status(400).send({
-            success: false,
-            error: 'Tài khoản đã tồn tại trong dự án!',
+        if (projectId) {
+          if (user.projects.includes(projectId)) {
+            return res.status(400).send({
+              success: false,
+              error: 'Tài khoản đã tồn tại trong dự án!',
+            });
+          }
+          user.projects.push(projectId);
+          body.projects = user.projects;
+          await User.findByIdAndUpdate(user._id, body);
+          if (body.avatar) {
+            channel.sendToQueue('FILE-CHANGE', Buffer.from(JSON.stringify({
+              id: user.id,
+              fileSave: getEditFileSave({ body, user }),
+              userId: req.headers.userid,
+            })));
+          }
+
+          return res.status(200).send({
+            success: true,
           });
         }
-        user.projects.push(projectId);
-        body.projects = user.projects;
-        await User.findByIdAndUpdate(user._id, body);
-        if (body.avatar) {
-          channel.sendToQueue('FILE-CHANGE', Buffer.from(JSON.stringify({
-            id: user.id,
-            fileSave: getEditFileSave({ body, user }),
-            userId: req.headers.userid,
-          })));
-        }
-
-        return res.status(200).send({
-          success: true,
+        return res.status(400).send({
+          success: false,
+          error: 'Tài khoản đã tồn tại!',
         });
       }
 
@@ -1452,12 +1517,15 @@ const updateUser = async (req, res) => {
     userIns.updatedBy = req.headers.userid;
 
     // kiểm tra tài khoản có tồn tại trong hệ thống ?
-    const userUpdate = await User.findById(userId);
+    const userUpdate = await User.findById(userId).populate('role');
     if (!userUpdate) {
       return res.status(400).send({
         success: false,
         error: 'Tài khoản không tồn tại!',
       });
+    }
+    if (userUpdate.role.value === 'CUSTOMER' && userIns.numberIdentify) {
+      userIns.username = userIns.numberIdentify;
     }
     // check phone, username, số định danh
     if (userIns.phone && userIns.phone !== userUpdate.phone) {
@@ -1521,9 +1589,9 @@ const getProfile = async (req, res) => {
   try {
     const { userid, role } = req.headers;
 
-    let select = '-password -__v -category -website -isDeleted -status -createdBy -updatedBy';
+    let select = '-password -__v -category -website -isDeleted -createdBy -updatedBy';
     if (role === 'PARTNER') {
-      select = '-password -__v -isDeleted -status -createdBy -updatedBy -gender';
+      select = '-password -__v -isDeleted -createdBy -updatedBy -gender';
     }
     const user = await User.findById(userid).select(select).populate('role', '-__v');
     if (!user) {
@@ -1751,15 +1819,18 @@ const loginMobile = async (req, res) => {
       isDeleted: false,
     }).populate('role');
     const token = jwt.sign(
-      { _id: user._id, role: user.role.value, name: user.name },
+      {
+        _id: user._id, role: user.role.value, name: user.name, phone: user.phone,
+      },
       process.env.SECRET_KEY,
-
       {
         expiresIn: process.env.JWT_EXPIRE,
       },
     );
     const refreshToken = jwt.sign(
-      { _id: user._id, role: user.role.value, name: user.name },
+      {
+        _id: user._id, role: user.role.value, name: user.name, phone: user.phone,
+      },
       process.env.SECRET_REFRESH_KEY,
 
       {
@@ -2015,6 +2086,196 @@ const listPartnerInCategory = async (req, res) => {
   }
 };
 
+const createUserPPA = async (req, res) => {
+  try {
+    const { body } = req;
+    const userCreateId = req.headers.userid;
+    const { projectId } = req.query;
+    body.createdBy = userCreateId;
+    body.updatedBy = userCreateId;
+    if (body.birthday) { body.birthday = new Date(body.birthday).valueOf(); }
+    if (body.dateOfIssue) { body.dateOfIssue = new Date(body.dateOfIssue).valueOf(); }
+    if (projectId) { body.projects = [projectId]; }
+    if (!body.username) { body.username = body.phone; }
+
+    // lấy role
+    const roleUser = body.role;
+    const role = await Role.findOne({ value: body.role });
+    body.role = role._id;
+
+    // cấu hình di chuyển ảnh định danh  vào thư mục
+    body.imageIdentify = {
+      front: body.imageFront,
+      backside: body.imageBackside,
+    };
+    const fileSave = {
+      avatar: body.avatar,
+      front: body.imageFront,
+      backside: body.imageBackside,
+    };
+
+    // truy vấn
+    const query = {
+      $or: [
+        { username: body.username },
+        { phone: body.phone },
+      ],
+    };
+    if (body.numberIdentify) { query.$or.push({ numberIdentify: body.numberIdentify }); }
+    if (body.ref) { query.$or.push({ ref: body.ref }); }
+
+    const user = await User.findOne(query);
+
+    if (user) {
+      // nếu tạo tài khoản đã tồn tại trong dụ án này nhưng khác quyền thì báo lỗi
+      if (user.role.toString() !== role._id.toString()) {
+        return res.status(400).send({
+          success: false,
+          message: 'Không thể tạo tài khoản!',
+          id: '',
+        });
+      }
+
+      if (user.isDeleted) {
+        // khôi phục tài khoản nếu tài khoản đã bị xóa
+        body.isDeleted = false;
+        await User.findByIdAndUpdate(user._id, body);
+        if (body.avatar) {
+          channel.sendToQueue('FILE-CHANGE', Buffer.from(JSON.stringify({
+            id: user.id,
+            fileSave: getEditFileSave({ body, user }),
+            userId: req.headers.userid,
+          })));
+        }
+        return res.status(200).send({
+          success: true,
+          message: '',
+          id: user._id,
+        });
+      }
+
+      if (roleUser === 'CUSTOMER') {
+        if (projectId) {
+          if (user.projects.includes(projectId)) {
+            return res.status(200).send({
+              success: false,
+              message: 'Tài khoản đã tồn tại trong dự án!',
+              id: user._id,
+            });
+          }
+          user.projects.push(projectId);
+          body.projects = user.projects;
+          await User.findByIdAndUpdate(user._id, body);
+          if (body.avatar) {
+            channel.sendToQueue('FILE-CHANGE', Buffer.from(JSON.stringify({
+              id: user._id,
+              fileSave: getEditFileSave({ body, user }),
+              userId: req.headers.userid,
+            })));
+          }
+
+          return res.status(200).send({
+            success: true,
+            message: '',
+            id: user._id,
+          });
+        }
+        return res.status(200).send({
+          success: false,
+          message: 'Tài khoản đã tồn tại!',
+          id: user._id,
+        });
+      }
+
+      return res.status(200).send({
+        success: false,
+        message: 'Tài khoản đã tồn tại!',
+        id: user._id,
+      });
+    }
+    await User.create(body, (err, result) => {
+      if (err) {
+        return res.status(400).send({
+          success: false,
+          message: '',
+          id: '',
+        });
+      }
+      channel.sendToQueue('FILE-IMAGE', Buffer.from(JSON.stringify({
+        id: result.id,
+        fileSave,
+        userId: req.headers.userid,
+      })));
+      return res.status(200).send({
+        success: true,
+        message: '',
+        id: result.id,
+      });
+    });
+  } catch (error) {
+    return res.status(400).send({
+      success: false,
+      message: error.message,
+      id: '',
+    });
+  }
+};
+
+const createDemo = async (req, res) => {
+  try {
+    await Demo.create({ email: req.body.email });
+    return res.status(200).send({
+      success: true,
+    });
+  } catch (error) {
+    return res.status(400).send({
+      success: false,
+      message: 'Đăng ký thất bại!',
+    });
+  }
+};
+
+const listDemo = async (req, res) => {
+  try {
+    const {
+      limit, page, keywords,
+    } = req.query;
+    const query = {};
+
+    const perPage = parseInt(limit || 10);
+    const currentPage = parseInt(page || 1);
+
+    if (keywords) {
+      query.email = { $regex: keywords, $options: 'i' };
+    }
+
+    const dataUser = await Demo.find(query)
+      .sort({ _id: -1 })
+      .skip((currentPage - 1) * perPage)
+      .populate('role', '-__v')
+      .limit(perPage);
+
+    const total = await Demo.countDocuments(query);
+    const totalPage = Math.ceil(total / perPage);
+
+    return res.status(200).send({
+      success: true,
+      data: dataUser,
+      paging: {
+        page: currentPage,
+        limit: perPage,
+        total,
+        totalPage,
+      },
+    });
+  } catch (error) {
+    return res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   login,
   listUser,
@@ -2035,4 +2296,7 @@ module.exports = {
   checkUser,
   createAPIKey,
   listPartnerInCategory,
+  createUserPPA,
+  createDemo,
+  listDemo,
 };

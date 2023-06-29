@@ -8,6 +8,7 @@ const eventEmitter = new EventEmitter();
 const VehicleCard = require('../models/vehicleCard');
 const connect = require('../lib/rabbitMQ');
 const Parking = require('../models/parking');
+const { url } = require('../config');
 
 let channel;
 const connectRabbit = async () => {
@@ -287,33 +288,59 @@ exports.updateVehicleCard = async (req, res) => {
 
     const card = await VehicleCard.findByIdAndUpdate(cardId, cardIns);
     // setup save file
-    const fileSave = {};
-    if (cardIns.frontLicense) {
-      const oldFile = card.vehicleLicense.frontLicense;
-      fileSave.frontLicense = {
-        newFile: cardIns.frontLicense,
-        oldFile,
-      };
+    if (card) {
+      // cập nhật hình ảnh giấy tờ xe
+      const fileSave = {};
+      if (cardIns.frontLicense) {
+        const oldFile = card.vehicleLicense.frontLicense;
+        fileSave.frontLicense = {
+          newFile: cardIns.frontLicense,
+          oldFile,
+        };
+      }
+      if (cardIns.backsideLicense) {
+        const oldFile = card.vehicleLicense.backsideLicense;
+        fileSave.backsideLicense = {
+          newFile: cardIns.backsideLicense,
+          oldFile,
+        };
+      }
+      if (cardIns.vehicleImage) {
+        const oldFile = card.vehicleLicense.vehicleImage;
+        fileSave.vehicleImage = {
+          newFile: cardIns.vehicleImage,
+          oldFile,
+        };
+      }
+      channel.sendToQueue('FILE-VEHICLE-CHANGE', Buffer.from(JSON.stringify({
+        id: card._id,
+        fileSave,
+        userId: req.headers.userid,
+      })));
+
+      // gửi thông báo duyệt thẻ xe, hủy the xe
+      if (card.status !== cardIns.status) {
+        // tạo thông báo cập nhật trạng thái thẻ xe
+        channel.sendToQueue('CREATE-NOTIFY', Buffer.from(JSON.stringify({
+          type: 'HOUSE_ROOF',
+          title: `Thẻ xe ${card.licensePlate} ${cardIns.status === 'DONE' ? 'đã được duyệt' : 'đã bị từ chối'}! `,
+          content: `Thẻ xe ${card.licensePlate} ${cardIns.status === 'DONE' ? 'đã được duyệt' : `${cardIns.reason}`}`,
+          toProject: card.projectId,
+          toUser: card.userId,
+          createdBy: req.headers.userid,
+          updatedBy: req.headers.userid,
+          url: cardIns.status === 'DONE' ? `${url}parking-card/${cardId}` : `${url}parking-card`,
+        })));
+
+        // gửi thông báo
+        channel.sendToQueue('SEND-MESSAGE', Buffer.from(JSON.stringify({
+          userId: card.userId,
+          content: `Thẻ xe ${card.licensePlate} ${cardIns.status === 'DONE' ? 'đã được duyệt' : 'đã bị từ chối'}! `,
+          type: 'HOUSE_ROOF',
+          urlNotify: cardIns.status === 'DONE' ? `${url}parking-card/${cardId}` : `${url}parking-card`,
+        })));
+      }
     }
-    if (cardIns.backsideLicense) {
-      const oldFile = card.vehicleLicense.backsideLicense;
-      fileSave.backsideLicense = {
-        newFile: cardIns.backsideLicense,
-        oldFile,
-      };
-    }
-    if (cardIns.vehicleImage) {
-      const oldFile = card.vehicleLicense.vehicleImage;
-      fileSave.vehicleImage = {
-        newFile: cardIns.vehicleImage,
-        oldFile,
-      };
-    }
-    channel.sendToQueue('FILE-VEHICLE-CHANGE', Buffer.from(JSON.stringify({
-      id: card._id,
-      fileSave,
-      userId: req.headers.userid,
-    })));
 
     return res.status(200).send({
       success: true,
@@ -513,6 +540,7 @@ exports.detailVehicleCard = async (req, res) => {
     // format data
     if (apartmentData) {
       detail._doc.apartment = {
+        _id: apartmentData._id,
         name: apartmentData.apartmentCode,
         block: apartmentData.block.name,
       };
@@ -520,6 +548,7 @@ exports.detailVehicleCard = async (req, res) => {
     }
     if (userData) {
       detail._doc.subscribers = {
+        _id: userData._id,
         name: userData.name,
         phone: userData.phone,
       };

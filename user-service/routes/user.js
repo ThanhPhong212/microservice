@@ -9,13 +9,15 @@ const {
   updateProfile,
   listStaffByProjectId,
   changePasswordUser,
-  // listExecute,
   checkUser,
   infoUser,
   createAPIKey,
+  createUserPPA,
+  createDemo,
+  listDemo,
 } = require('../controllers/users');
 const validation = require('../middlewares/validation');
-const { create } = require('../validates/user.validate');
+const { create, validateLogin, validateCreate } = require('../validates/user.validate');
 
 module.exports = (app, router) => {
   router.get('/staff', listStaffByProjectId);
@@ -23,7 +25,7 @@ module.exports = (app, router) => {
 
   router.get('/resident', listResidents);
   // đăng nhập
-  router.post('/login', login);
+  router.post('/login', validation(validateLogin), login);
 
   // thông tin người dùng
   router.put('/change-password', changePassword);
@@ -36,5 +38,11 @@ module.exports = (app, router) => {
   router.put('/:userId', updateUser);
   router.get('/list', listUser);
   router.get('/:userId', infoUser);
+
+  // other
+  router.post('/create', validation(validateCreate), createUserPPA);
+  router.post('/demo', createDemo);
+  router.get('/demo/list', listDemo);
+  router.get('/detail/:userId', infoUser);
   app.use('/v1/users', router);
 };

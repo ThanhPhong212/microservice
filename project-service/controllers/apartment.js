@@ -50,6 +50,7 @@ const connectRabbit = async () => {
   await channel.assertQueue('FEE-FILTER-BLOCK-GET');
   await channel.assertQueue('ACCOUNTING-FILTER-BLOCK-GET');
   await channel.assertQueue('RECEIPT-EXPORT-APARTMENT-GET');
+  await channel.assertQueue('ONESIGNAL-LIST-RESIDENT-GET');
 };
 
 const listApartmentID = async (arrayApartmentId) => {
@@ -93,6 +94,56 @@ const searchApartment = async (apartmentSearch) => {
 };
 
 connectRabbit().then(() => {
+  channel.consume('ONESIGNAL-LIST-RESIDENT-GET', async (data) => {
+    try {
+      const { projectId, blockId, apartmentId } = JSON.parse(data.content);
+      channel.ack(data);
+      let listUserId = [];
+      if (blockId || projectId) {
+        const query = {};
+        if (blockId) { query.block = blockId; }
+        if (projectId) { query.project = projectId; }
+        const listApartment = await Apartment.find(query);
+        if (listApartment.length) {
+          listApartment.map((item) => {
+            if (item.owner) {
+              listUserId.push(item.owner);
+            }
+            if (item.relativeOwners.length) {
+              listUserId = listUserId.concat(item.relativeOwners);
+            }
+            if (item.tenants.length) {
+              listUserId = listUserId.concat(item.tenants);
+            }
+            if (item.memberTenants.length) {
+              listUserId = listUserId.concat(item.memberTenants);
+            }
+            return item;
+          });
+        }
+      } else if (apartmentId) {
+        const listApartment = await Apartment.findById(apartmentId);
+        if (listApartment) {
+          if (listApartment.owner) {
+            listUserId.push(listApartment.owner);
+          }
+          if (listApartment.relativeOwners.length) {
+            listUserId = listUserId.concat(listApartment.relativeOwners);
+          }
+          if (listApartment.tenants.length) {
+            listUserId = listUserId.concat(listApartment.tenants);
+          }
+          if (listApartment.memberTenants.length) {
+            listUserId = listUserId.concat(listApartment.memberTenants);
+          }
+        }
+      }
+      channel.sendToQueue('ONESIGNAL-LIST-RESIDENT-INFO', Buffer.from(JSON.stringify(listUserId)));
+    } catch (error) {
+      channel.sendToQueue('ONESIGNAL-LIST-RESIDENT-INFO', Buffer.from(JSON.stringify([])));
+    }
+  });
+
   channel.consume('RECEIPT-EXPORT-APARTMENT-GET', async (data) => {
     try {
       const listIdApartment = JSON.parse(data.content);
@@ -414,7 +465,7 @@ connectRabbit().then(() => {
       const apartment = await searchApartment(apartmentSearch);
       channel.sendToQueue('FEE-SEARCH-APARTMENT-INFO', Buffer.from(JSON.stringify(apartment)));
     } catch (error) {
-      const dataAvailable = {};
+      const dataAvailable = null;
       channel.sendToQueue('FEE-SEARCH-APARTMENT-INFO', Buffer.from(JSON.stringify(dataAvailable)));
     }
   });

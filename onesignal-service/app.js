@@ -5,6 +5,7 @@ const fs = require('fs');
 const bodyparser = require('body-parser');
 const cors = require('cors');
 
+const cron = require('node-cron');
 const config = require('./config/index');
 const logger = require('./utils/logger/index');
 const connectDB = require('./lib/database'); // connect DB
@@ -13,6 +14,7 @@ const app = express();
 const router = express.Router();
 // eslint-disable-next-line camelcase
 const loggerRequestMiddleware = require('./middlewares/logger_request');
+const { checkStartingTheEvent, checkTheUtilityRegistration } = require('./controllers/onesignal');
 
 app.use(loggerRequestMiddleware);
 app.use(bodyparser.urlencoded({ extended: true }));
@@ -40,9 +42,11 @@ app.listen(config.server.port, (err) => {
   );
 });
 
-// const CustomNotification = require('./lib/onesignal');
-
-// const customNotification = new CustomNotification({ includePlayerIds: ['f83c2e75-583c-46c1-ad9a-2d9df8ef7ff5'], contents: { en: 'nội dung test nè' } });
-// customNotification.create();
+// nhắt nhở sự kiện và tiện ích
+// 0 7 * * *
+cron.schedule('0 7 * * *', () => {
+  checkStartingTheEvent();
+  checkTheUtilityRegistration();
+});
 
 module.exports = app;

@@ -20,7 +20,7 @@ app.use(bodyparser.json());
 app.use(express.static(`${__dirname}/public`)); // public
 app.use(express.static(`${__dirname}/tmp`)); // public
 app.use(cors());
-app.use(fileUpload({ createParentPath: true }));
+app.use(fileUpload({ createParentPath: true, multiple: true }));
 
 // run server
 app.listen(config.server.port, (err) => {

@@ -16,6 +16,54 @@ const ROUTES = [
     },
   },
   {
+    url: '/v1/users/demo',
+    auth: false,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:1001',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
+    url: '/v1/users/create',
+    auth: false,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:1001',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
+    url: '/v1/users/detail',
+    auth: false,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:1001',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
     url: '/v1/users',
     auth: true,
     creditCheck: false,
@@ -212,6 +260,22 @@ const ROUTES = [
     },
   },
   {
+    url: '/v1/community',
+    auth: true,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:6001',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
     url: '/v1/mobile/services',
     auth: true,
     creditCheck: false,
@@ -260,7 +324,55 @@ const ROUTES = [
     },
   },
   {
+    url: '/v1/mobile/devices/playerid',
+    auth: false,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:7001',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
+    url: '/v1/mobile/devices/send-notify-ppa',
+    auth: false,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:7001',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
     url: '/v1/mobile/devices',
+    auth: true,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:7001',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
+    url: '/v1/onesignal',
     auth: true,
     creditCheck: false,
     // rateLimit: {
@@ -365,6 +477,22 @@ const ROUTES = [
     // },
     proxy: {
       target: 'http://localhost:8443',
+      changeOrigin: true,
+      // pathRewrite: {
+      //   '^/users': '',
+      // },
+    },
+  },
+  {
+    url: '/v1/ppa',
+    auth: false,
+    creditCheck: false,
+    // rateLimit: {
+    //   windowMs: 15 * 60 * 1000,
+    //   max: 5,
+    // },
+    proxy: {
+      target: 'http://localhost:9999',
       changeOrigin: true,
       // pathRewrite: {
       //   '^/users': '',

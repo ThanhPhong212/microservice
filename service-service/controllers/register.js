@@ -25,8 +25,24 @@ const connectRabbit = async () => {
   await channel.assertQueue('APARTMENT-DETAILS-INFO');
   await channel.assertQueue('USER-DETAILS-INFO');
   await channel.assertQueue('USER-REGISTER-SEARCH-INFO');
+  await channel.assertQueue('CHECK-SERVICE-GET');
 };
-connectRabbit();
+connectRabbit().then(() => {
+  channel.consume('CHECK-SERVICE-GET', async (data) => {
+    channel.ack(data);
+    try {
+      const date = new Date();
+      date.setHours(7, 0, 0, 0);
+      const day = date.valueOf();
+      const listRegister = await Register.find(
+        { registrationDate: `${day}` },
+      ).populate('service', 'name');
+      channel.sendToQueue('CHECK-SERVICE-INFO', Buffer.from(JSON.stringify(listRegister)));
+    } catch (error) {
+      channel.sendToQueue('CHECK-SERVICE-INFO', Buffer.from(JSON.stringify([])));
+    }
+  });
+});
 const setupTime = (data) => {
   try {
     const { from, to } = data;
@@ -421,7 +437,7 @@ exports.registrationDetails = async (req, res) => {
 
     // Get registration details
     const register = await Register.findById(registerId)
-      .select('-createdBy -updatedBy -updatedAt -projectId -place -__v')
+      .select('-createdBy -updatedBy -updatedAt -place -__v')
       .populate('service')
       .lean();
 
@@ -454,15 +470,14 @@ exports.registrationDetails = async (req, res) => {
       register.service.slotConfig = slotConfig;
     }
     register.slot = register.service.slotConfig && register.service.slotConfig[register.slotId] ? register.service.slotConfig[register.slotId].slotName : null;
-    register.createdBy = dataUser.name;
-    register.phone = dataUser.phone;
+    register.createdBy = dataUser ? dataUser.name : null;
+    register.phone = dataUser ? dataUser.phone : null;
     register.apartment = {
       name: dataApartment ? dataApartment.apartmentCode : null,
       block: dataApartment ? dataApartment.block.name : null,
     };
     register.service = register.service.name;
     register.date = register.time.date;
-    delete register.userId;
     delete register.apartmentId;
 
     return res.status(200).send({

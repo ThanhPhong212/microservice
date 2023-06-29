@@ -14,7 +14,8 @@ module.exports = {
     file_name: process.env.environment,
   },
   onesignal: {
-    id: process.env.one_signal_id,
-    key: process.env.one_signal_key,
+    id: process.env.onesignal_id,
+    key: process.env.onesignal_key,
   },
+  url: process.env.url_notify,
 };
